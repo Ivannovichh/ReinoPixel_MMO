@@ -1,0 +1,38 @@
+# ==========================================
+# SEGURIDAD - CREDENCIALES Y SECRETOS
+# ==========================================
+# Bloquea cualquier archivo JSON que contenga llaves privadas (como Firebase)
+*.json
+!project.godot
+
+# ==========================================
+# JAVA & MAVEN (Servidor)
+# ==========================================
+# Archivos compilados y carpetas de construcción
+target/
+*.class
+*.log
+
+# Archivos de bases de datos locales (SQLite por si acaso)
+*.db
+*.sqlite
+*.sqlite3
+
+# Archivos temporales de IDEs (IntelliJ, VS Code)
+.vscode/
+.idea/
+*.iml
+
+# ==========================================
+# GODOT ENGINE (Cliente)
+# ==========================================
+# Carpetas temporales y caché de Godot
+.godot/
+.import/
+export/
+export_presets.cfg
+
+# Archivos de exportación de binarios del juego
+*.exe
+*.pck
+*.zip
