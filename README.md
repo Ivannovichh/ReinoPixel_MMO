@@ -35,7 +35,7 @@ Este repositorio alberga la arquitectura completa de un juego multijugador masiv
 El ecosistema utiliza un patrón de diseño **Cliente-Servidor Autoritativo**. El cliente renderiza y predice, pero el servidor backend tiene siempre la última palabra sobre el estado del mundo y la validación de los datos.
 
 ```mermaid
-graph TD
+ graph TD
     subgraph Capa Cliente
         G[Godot Engine 4.x] 
         UI[Interfaz de Usuario]
