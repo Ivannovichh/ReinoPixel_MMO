@@ -56,6 +56,7 @@ graph TD
     WS <--> JS
     JS <-->|Validación BCrypt| AUTH
     AUTH <-->|JDBC| DB
+```
 
 ## 🛠️ Stack Tecnológico y Versiones
 
