@@ -23,15 +23,12 @@
             <version>1.5.3</version>
         </dependency>
 
-        <!-- 
-            SDK de Firebase Admin para la autenticación en la nube 
-        -->
+        <!-- Librería para la encriptación segura de contraseñas (BCrypt) -->
         <dependency>
-            <groupId>com.google.firebase</groupId>
-            <artifactId>firebase-admin</artifactId>
-            <version>9.2.0</version>
+            <groupId>org.mindrot</groupId>
+            <artifactId>jbcrypt</artifactId>
+            <version>0.4</version>
         </dependency>
-
         <!-- 
             Conector de base de datos PostgreSQL 
         -->

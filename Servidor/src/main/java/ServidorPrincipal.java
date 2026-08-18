@@ -1,16 +1,7 @@
 import org.java_websocket.server.WebSocketServer;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
-import com.google.auth.oauth2.GoogleCredentials;
-import com.google.firebase.FirebaseApp;
-import com.google.firebase.FirebaseOptions;
-import com.google.firebase.auth.FirebaseAuth;
-import com.google.firebase.auth.UserRecord;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -22,47 +13,6 @@ public class ServidorPrincipal extends WebSocketServer {
 
     public ServidorPrincipal(InetSocketAddress address) {
         super(address);
-        inicializarFirebase();
-    }
-
-    /* 
-     * inicializarFirebase: Arranca la conexión con la nube detectando si estamos 
-     * en Railway (variable de entorno) o en local (archivo físico claves.json).
-     */
-    private void inicializarFirebase() {
-        try {
-            FirebaseOptions options;
-            
-            // Verificamos si existe la variable de entorno configurada en Railway
-            String jsonCredenciales = System.getenv("FIREBASE_CREDENTIALS_JSON");
-
-            if (jsonCredenciales != null && !jsonCredenciales.isEmpty()) {
-                // Entorno de producción (Railway): Lee el JSON directamente desde la variable de entorno
-                System.out.println("Detectado entorno de nube: Cargando credenciales desde variable de entorno...");
-                ByteArrayInputStream inputStream = new ByteArrayInputStream(
-                    jsonCredenciales.getBytes(StandardCharsets.UTF_8)
-                );
-                options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(inputStream))
-                    .build();
-            } else {
-                // Entorno local: Lee el archivo físico claves.json del ordenador
-                System.out.println("Detectado entorno local: Cargando archivo claves.json...");
-                File file = new File("./claves.json");
-                FileInputStream serviceAccount = new FileInputStream(file);
-                options = FirebaseOptions.builder()
-                    .setCredentials(GoogleCredentials.fromStream(serviceAccount))
-                    .build();
-            }
-
-            if (FirebaseApp.getApps().isEmpty()) {
-                FirebaseApp.initializeApp(options);
-                System.out.println("¡Firebase inicializado y conectado a la nube con éxito!");
-            }
-        } catch (IOException e) {
-            System.out.println("Error crítico al inicializar Firebase. Revisa las credenciales o el archivo JSON.");
-            e.printStackTrace();
-        }
     }
 
     @Override
@@ -88,7 +38,9 @@ public class ServidorPrincipal extends WebSocketServer {
     }
 
     /* 
-     * procesarPaquete: Enruta las peticiones de Registro (REG:) y Login (AUTH:) hacia Firebase.
+     * procesarPaquete: Enruta las peticiones entrantes del cliente según su prefijo.
+     * Identifica si el jugador intenta registrarse (REG), iniciar sesión (AUTH) o 
+     * actualizar su posición (POS), derivando el texto al método correspondiente.
      */
     private void procesarPaquete(WebSocket conn, String message) {
         if (message.startsWith("REG:")) {
@@ -105,8 +57,10 @@ public class ServidorPrincipal extends WebSocketServer {
     }
 
     /* 
-     * manejarRegistro: Crea un usuario nuevo directamente en la nube de Firebase Auth 
-     * utilizando UserRecord.CreateRequest de forma correcta.
+     * manejarRegistro: Extrae las credenciales del paquete recibido y solicita 
+     * la creación de la cuenta en PostgreSQL mediante el GestorAutenticacion.
+     * Responde al cliente con un OK si la inserción tiene éxito, o con un ERROR 
+     * si el correo ya estaba registrado previamente.
      */
     private void manejarRegistro(WebSocket conn, String message) {
         String[] partes = message.split(":");
@@ -114,40 +68,37 @@ public class ServidorPrincipal extends WebSocketServer {
             String correo = partes[1].trim();
             String password = partes[2].trim();
             
-            try {
-                UserRecord.CreateRequest request = new UserRecord.CreateRequest()
-                    .setEmail(correo)
-                    .setPassword(password);
-                
-                UserRecord userRecord = FirebaseAuth.getInstance().createUser(request);
-                System.out.println("¡Usuario registrado en Firebase con éxito: " + userRecord.getEmail() + "!");
+            boolean registrado = GestorAutenticacion.registrarJugador(correo, password);
+            
+            if (registrado) {
+                System.out.println("¡Usuario registrado en BBDD con éxito: " + correo + "!");
                 conn.send("REG_OK");
-                
-            } catch (Exception e) {
-                System.out.println("Fallo al registrar usuario en la nube: " + e.getMessage());
-                conn.send("REG_ERROR: " + e.getMessage());
+            } else {
+                System.out.println("Fallo al registrar (posible duplicado): " + correo);
+                conn.send("REG_ERROR: El correo ya existe o fallo en la nube");
             }
         }
     }
 
     /* 
-     * manejarAutenticacion: Valida la existencia del usuario en la nube de Firebase.
+     * manejarAutenticacion: Extrae los datos de inicio de sesión y verifica 
+     * su validez contra la base de datos de PostgreSQL. Si las credenciales 
+     * coinciden, vincula la sesión activa al correo y otorga el acceso.
      */
     private void manejarAutenticacion(WebSocket conn, String message) {
         String[] partes = message.split(":");
         if (partes.length >= 3) {
             String correo = partes[1].trim();
+            String password = partes[2].trim();
             
-            try {
-                UserRecord userRecord = FirebaseAuth.getInstance().getUserByEmail(correo);
-                
-                if (userRecord != null) {
-                    sesionesActivas.put(conn, correo);
-                    System.out.println("¡Login exitoso en la nube para: " + correo + "!");
-                    conn.send("AUTH_OK");
-                }
-            } catch (Exception e) {
-                System.out.println("Fallo de autenticación en la nube para: " + correo);
+            boolean autenticado = GestorAutenticacion.autenticarJugador(correo, password);
+            
+            if (autenticado) {
+                sesionesActivas.put(conn, correo);
+                System.out.println("¡Login exitoso en BBDD para: " + correo + "!");
+                conn.send("AUTH_OK");
+            } else {
+                System.out.println("Fallo de autenticación para: " + correo);
                 conn.send("AUTH_ERROR: Usuario no encontrado o credenciales inválidas");
             }
         }
@@ -160,12 +111,15 @@ public class ServidorPrincipal extends WebSocketServer {
 
     @Override
     public void onStart() {
-        System.out.println("Servidor Cloud de Firebase iniciado en el puerto 8080.");
+        System.out.println("Servidor iniciado y escuchando conexiones...");
     }
 
+    /* 
+     * main: Punto de entrada de la aplicación. Configura el puerto de escucha 
+     * (priorizando las variables de entorno para su despliegue en Railway) y 
+     * arranca el servidor WebSocket.
+     */
     public static void main(String[] args) {
-        // En Railway el puerto se suele asignar por variable de entorno, 
-        // pero mantenemos el 8080 por defecto para local.
         int puerto = 8080;
         String portEnv = System.getenv("PORT");
         if (portEnv != null && !portEnv.isEmpty()) {
