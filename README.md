@@ -18,10 +18,9 @@
 2. [Arquitectura del Sistema](#-arquitectura-del-sistema)
 3. [Stack Tecnológico](#️-stack-tecnológico-y-versiones)
 4. [Características Principales](#-características-principales)
-5. [Guía de Instalación y Despliegue](#️-guía-de-instalación-y-despliegue)
-6. [Hoja de Ruta y Progreso](#️-hoja-de-ruta-y-progreso-fases-del-mmo)
-7. [Datos Curiosos del Desarrollo](#-datos-curiosos-del-desarrollo)
-8. [Licencia](#-licencia)
+5. [Hoja de Ruta y Progreso](#️-hoja-de-ruta-y-progreso-fases-del-mmo)
+6. [Datos Curiosos del Desarrollo](#-datos-curiosos-del-desarrollo)
+7. [Licencia](#-licencia)
 
 ---
 
