@@ -8,20 +8,15 @@ const SENSITIVITY = 0.0015
 
 var gravity = ProjectSettings.get_setting("physics/3d/default_gravity")
 var puede_moverse = false
-
 var tiempo_envio = 0.0
 const INTERVALO_ENVIO = 0.1 
 
 """
 _unhandled_input
-Captura los eventos de entrada del hardware (ratón, teclado) que no han 
-sido consumidos por la interfaz de usuario. Su función es leer el movimiento 
-del ratón para rotar al personaje sobre el eje Y y orbitar el brazo de la cámara 
-(SpringArm3D) en el eje X, solo si el movimiento está habilitado.
+Gobernante de la visión. Controla la cámara tipo tercera persona bloqueada.
 """
 func _unhandled_input(event):
-	if not puede_moverse:
-		return
+	if not puede_moverse: return
 
 	if event is InputEventMouseMotion:
 		rotate_y(-event.relative.x * SENSITIVITY)
@@ -30,14 +25,11 @@ func _unhandled_input(event):
 
 """
 _physics_process
-Bucle físico del motor ejecutado en cada frame. Aplica la gravedad constante, 
-procesa el salto, calcula los vectores de movimiento y desplaza al personaje. 
-Gestiona un temporizador (tiempo_envio) para empaquetar y transmitir periódicamente 
-las coordenadas globales del jugador al backend Java mediante el websocket.
+Procesador de mecánicas físicas e inyector de coordenadas al servidor.
+Inserta vectores espaciales puros al buffer para optimizar la carga del ancho de banda.
 """
 func _physics_process(delta):
-	if not puede_moverse:
-		return
+	if not puede_moverse: return
 
 	if not is_on_floor():
 		velocity.y -= gravity * delta
@@ -55,25 +47,22 @@ func _physics_process(delta):
 		velocity.x = move_toward(velocity.x, 0, SPEED)
 		velocity.z = move_toward(velocity.z, 0, SPEED)
 
-	if Input.is_action_just_pressed("ui_cancel"):
-		get_tree().quit()
+	if Input.is_action_just_pressed("ui_cancel"): get_tree().quit()
 
 	move_and_slide()
 
 	tiempo_envio += delta
 	if tiempo_envio >= INTERVALO_ENVIO:
 		tiempo_envio = 0.0
-		
-		var cliente_red = get_parent()
-		if cliente_red and "socket" in cliente_red:
-			if cliente_red.socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
-				var mensaje_pos = "POS:" + str(global_position.x) + "," + str(global_position.y) + "," + str(global_position.z)
-				cliente_red.socket.put_packet(mensaje_pos.to_utf8_buffer())
+		var buffer = RedGlobal.crear_buffer_salida(RedGlobal.C_MOVER_PERSONAJE)
+		buffer.put_float(global_position.x)
+		buffer.put_float(global_position.y)
+		buffer.put_float(global_position.z)
+		RedGlobal.enviar_buffer(buffer)
 
 """
 habilitar_movimiento
-Método de control de estado interno. Permite cambiar el booleano `puede_moverse` 
-a verdadero para liberar los Controles del jugador una vez superada la fase de menús.
+Interruptor lógico invocado tras completarse los tiempos de carga en el mundo virtual.
 """
 func habilitar_movimiento():
 	puede_moverse = true

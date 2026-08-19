@@ -1,173 +1,231 @@
+/*
+ * Importación de las herramientas internas del proyecto distribuidas en paquetes.
+ * Permite al núcleo de red acceder a la base de datos, entidades y gestores lógicos.
+ */
+import basededatos.ConexionBBDD;
+import gestores.GestorAutenticacion;
+import gestores.GestorPersonajes;
+import plantillas.JugadorServidor;
+import plantillas.Personaje;
+import red.Opcodes;
+import red.PaqueteEntrada;
+import red.PaqueteSalida;
+
+// Importaciones de librerías externas y Java
 import org.java_websocket.server.WebSocketServer;
 import org.java_websocket.WebSocket;
 import org.java_websocket.handshake.ClientHandshake;
-
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
-import java.util.List; 
 
+/**
+ * Clase ServidorPrincipal.
+ * Núcleo del backend de red. Gestiona las conexiones entrantes a través de WebSockets
+ * y enruta los paquetes de datos binarios (0s y 1s) hacia los gestores asíncronos.
+ * Adaptado para soportar alto rendimiento y bajo consumo de ancho de banda.
+ */
 public class ServidorPrincipal extends WebSocketServer {
 
     private HashMap<WebSocket, JugadorServidor> sesionesActivas = new HashMap<>();
 
+    /**
+     * Constructor del servidor.
+     * Define la dirección IP y el puerto de escucha utilizando la red subyacente.
+     */
     public ServidorPrincipal(InetSocketAddress address) {
         super(address);
     }
 
     @Override
     public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        System.out.println("Cliente conectado desde: " + conn.getRemoteSocketAddress());
+        // Conexión abierta silenciosamente para mantener los logs limpios.
     }
 
     @Override
     public void onClose(WebSocket conn, int code, String reason, boolean remote) {
         sesionesActivas.remove(conn);
-        System.out.println("Conexión cerrada.");
     }
 
+    /**
+     * onMessage (Texto Plano)
+     * Como hemos migrado a binario puro, las peticiones de texto plano se ignoran
+     * intencionalmente. Esto evita que clientes desactualizados o intentos de 
+     * inyección saturen el procesamiento del servidor.
+     */
     @Override
     public void onMessage(WebSocket conn, String message) {
-        procesarPaquete(conn, message);
+        // Vacío por diseño.
     }
 
+    /**
+     * onMessage (Binario)
+     * Punto de entrada principal para toda la comunicación de alta velocidad.
+     * Transforma el ByteBuffer nativo en nuestra herramienta PaqueteEntrada 
+     * para extraer las variables de forma secuencial.
+     */
     @Override
     public void onMessage(WebSocket conn, ByteBuffer message) {
-        String texto = new String(message.array(), StandardCharsets.UTF_8);
-        procesarPaquete(conn, texto);
+        PaqueteEntrada paquete = new PaqueteEntrada(message.array());
+        procesarPaqueteBinario(conn, paquete);
     }
 
-    /* 
-     * procesarPaquete: Enruta las peticiones entrantes del cliente según su prefijo.
-     * Identifica si el jugador intenta registrarse (REG), iniciar sesión (AUTH) o 
-     * actualizar su posición (POS), derivando el texto al método correspondiente.
+    /**
+     * procesarPaqueteBinario
+     * Enrutador central. Extrae el primer byte (Opcode) del flujo de datos
+     * y determina qué acción solicita el cliente (Godot) basándose en el diccionario.
      */
-    private void procesarPaquete(WebSocket conn, String message) {
-        if (message.startsWith("REG:")) {
-            manejarRegistro(conn, message);
-        }
-        else if (message.startsWith("AUTH:")) {
-            manejarAutenticacion(conn, message);
-        }
-        else if (message.startsWith("PEDIR_PERSONAJES")) { 
-            manejarPeticionPersonajes(conn);
-        }
-        else if (message.startsWith("CREAR_PERSONAJE:")) { 
-            manejarCreacionPersonaje(conn, message);
-        }
-        else if (message.startsWith("POS:")) {
-            String coordenadas = message.substring(4);
-            JugadorServidor jugador = sesionesActivas.get(conn);
-            String usuario = (jugador != null) ? jugador.getCorreo() : "Desconocido";
-            System.out.println("Jugador (" + usuario + ") en coords: " + coordenadas);
+    private void procesarPaqueteBinario(WebSocket conn, PaqueteEntrada paquete) {
+        byte opcode = paquete.leerByte();
+
+        switch (opcode) {
+            case Opcodes.C_REGISTRO:
+                manejarRegistroBinario(conn, paquete);
+                break;
+            case Opcodes.C_LOGIN:
+                manejarAutenticacionBinario(conn, paquete);
+                break;
+            case Opcodes.C_PEDIR_PERSONAJES:
+                manejarPeticionPersonajesBinario(conn);
+                break;
+            case Opcodes.C_CREAR_PERSONAJE:
+                manejarCreacionPersonajeBinario(conn, paquete);
+                break;
+            case Opcodes.C_MOVER_PERSONAJE:
+                manejarMovimientoBinario(conn, paquete);
+                break;
+            default:
+                // Ignorar opcodes desconocidos por seguridad.
+                break;
         }
     }
 
-    /* 
-     * manejarRegistro: Extrae las credenciales del paquete recibido y solicita 
-     * la creación de la cuenta en PostgreSQL mediante el GestorAutenticacion.
-     * Responde al cliente con un OK si la inserción tiene éxito, o con un ERROR 
-     * si el correo ya estaba registrado previamente.
+    /**
+     * manejarRegistroBinario
+     * Extrae el correo y contraseña del paquete secuencial y ejecuta el registro 
+     * en BBDD de forma asíncrona. Construye y envía un paquete binario de respuesta.
      */
-    private void manejarRegistro(WebSocket conn, String message) {
-        String[] partes = message.split(":");
-        if (partes.length >= 3) {
-            String correo = partes[1].trim();
-            String password = partes[2].trim();
-            
-            boolean registrado = GestorAutenticacion.registrarJugador(correo, password);
-            
+    private void manejarRegistroBinario(WebSocket conn, PaqueteEntrada paquete) {
+        String correo = paquete.leerString();
+        String password = paquete.leerString();
+        
+        GestorAutenticacion.registrarJugador(correo, password).thenAccept(registrado -> {
+            PaqueteSalida respuesta = new PaqueteSalida();
             if (registrado) {
-                System.out.println("¡Usuario registrado en BBDD con éxito: " + correo + "!");
-                conn.send("REG_OK");
+                respuesta.escribirByte(Opcodes.S_REGISTRO_OK);
             } else {
-                System.out.println("Fallo al registrar (posible duplicado): " + correo);
-                conn.send("REG_ERROR: El correo ya existe o fallo en la nube");
+                respuesta.escribirByte(Opcodes.S_REGISTRO_ERROR);
             }
-        }
+            conn.send(respuesta.obtenerBytes());
+        });
     }
 
-    /* 
-     * manejarAutenticacion: Extrae los datos de inicio de sesión y verifica 
-     * su validez contra la base de datos de PostgreSQL. Si las credenciales 
-     * coinciden, vincula la sesión activa al correo y otorga el acceso.
+    /**
+     * manejarAutenticacionBinario
+     * Verifica credenciales en segundo plano. Si son correctas, vincula la conexión
+     * a una instancia de JugadorServidor en la memoria RAM y autoriza la entrada.
      */
-    private void manejarAutenticacion(WebSocket conn, String message) {
-        String[] partes = message.split(":");
-        if (partes.length >= 3) {
-            String correo = partes[1].trim();
-            String password = partes[2].trim();
-            
-            boolean autenticado = GestorAutenticacion.autenticarJugador(correo, password);
-            
+    private void manejarAutenticacionBinario(WebSocket conn, PaqueteEntrada paquete) {
+        String correo = paquete.leerString();
+        String password = paquete.leerString();
+        
+        GestorAutenticacion.autenticarJugador(correo, password).thenAccept(autenticado -> {
+            PaqueteSalida respuesta = new PaqueteSalida();
             if (autenticado) {
-             
                 JugadorServidor nuevoJugador = new JugadorServidor(conn, correo, 1);
                 sesionesActivas.put(conn, nuevoJugador);
+                respuesta.escribirByte(Opcodes.S_LOGIN_OK);
+            } else {
+                respuesta.escribirByte(Opcodes.S_LOGIN_ERROR);
+            }
+            conn.send(respuesta.obtenerBytes());
+        });
+    }
+
+    /**
+     * manejarPeticionPersonajesBinario
+     * Solicita la lista de personajes y la empaqueta dinámicamente en binario.
+     * Estructura del paquete de salida: [Opcode] [Cantidad de Personajes] -> Bucle( [Id] [Nombre] [Nivel] )
+     */
+    private void manejarPeticionPersonajesBinario(WebSocket conn) {
+        JugadorServidor jugador = sesionesActivas.get(conn);
+        if (jugador != null) {
+            GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
+                PaqueteSalida respuesta = new PaqueteSalida();
+                respuesta.escribirByte(Opcodes.S_LISTA_PERSONAJES);
+                respuesta.escribirInt(lista.size()); // Avisamos a Godot de cuántos avatares vienen
                 
-                System.out.println("¡Login exitoso en BBDD para: " + correo + "!");
-                conn.send("AUTH_OK");
-            } else {
-                System.out.println("Fallo de autenticación para: " + correo);
-                conn.send("AUTH_ERROR: Usuario no encontrado o credenciales inválidas");
-            }
+                for (Personaje p : lista) {
+                    respuesta.escribirInt(p.getId());
+                    respuesta.escribirString(p.getNombre());
+                    respuesta.escribirInt(p.getNivel());
+                }
+                conn.send(respuesta.obtenerBytes());
+            });
         }
     }
 
-    /* 
-     * AÑADIDO - manejarPeticionPersonajes: 
-     * Consulta la BBDD a través del GestorPersonajes para obtener la lista de 
-     * avatares del jugador y se los envía a Godot formateados como un string.
+    /**
+     * manejarCreacionPersonajeBinario
+     * Extrae el nombre deseado del flujo binario, crea el personaje y devuelve 
+     * un estado (1 para éxito, 0 para error). Si tiene éxito, solicita el refresco automático.
      */
-    private void manejarPeticionPersonajes(WebSocket conn) {
+    private void manejarCreacionPersonajeBinario(WebSocket conn, PaqueteEntrada paquete) {
         JugadorServidor jugador = sesionesActivas.get(conn);
         if (jugador != null) {
-            List<Personaje> lista = GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta());
+            String nombrePersonaje = paquete.leerString();
             
-            StringBuilder respuesta = new StringBuilder("LISTA_PERSONAJES:");
-            for (Personaje p : lista) {
-                respuesta.append(p.getNombre()).append(",").append(p.getNivel()).append(";");
-            }
-            conn.send(respuesta.toString());
+            GestorPersonajes.crearPersonaje(jugador.getIdCuenta(), nombrePersonaje).thenAccept(creado -> {
+                PaqueteSalida respuesta = new PaqueteSalida();
+                respuesta.escribirByte(Opcodes.S_CREAR_PERSONAJE_RES);
+                respuesta.escribirByte(creado ? 1 : 0); // Empaquetamos un booleano como byte
+                conn.send(respuesta.obtenerBytes());
+                
+                if (creado) {
+                    manejarPeticionPersonajesBinario(conn);
+                }
+            });
         }
     }
 
-    /* 
-     * Extrae el nombre deseado para el nuevo avatar y solicita su inserción 
-     * en PostgreSQL. Devuelve confirmación al cliente y refresca la lista.
+    /**
+     * manejarMovimientoBinario
+     * Función ultra rápida que actualiza en memoria las coordenadas espaciales.
+     * Extrae los 3 floats (X, Y, Z) y sobrescribe los valores sin tocar la BBDD.
      */
-    private void manejarCreacionPersonaje(WebSocket conn, String message) {
+    private void manejarMovimientoBinario(WebSocket conn, PaqueteEntrada paquete) {
         JugadorServidor jugador = sesionesActivas.get(conn);
-        if (jugador != null) {
-            String nombrePersonaje = message.split(":")[1].trim();
-            boolean creado = GestorPersonajes.crearPersonaje(jugador.getIdCuenta(), nombrePersonaje);
+        if (jugador != null && jugador.getPersonajeActivo() != null) {
+            float x = paquete.leerFloat();
+            float y = paquete.leerFloat();
+            float z = paquete.leerFloat();
             
-            if (creado) {
-                conn.send("CREAR_OK");
-                manejarPeticionPersonajes(conn); // Refresca la lista automáticamente
-            } else {
-                conn.send("CREAR_ERROR: El nombre ya existe");
-            }
+            jugador.getPersonajeActivo().actualizarPosicion(x, y, z);
         }
     }
 
     @Override
     public void onError(WebSocket conn, Exception ex) {
-        ex.printStackTrace();
+        // Previene volcados de memoria por desconexiones forzadas del cliente
     }
 
     @Override
     public void onStart() {
-        System.out.println("Servidor iniciado y escuchando conexiones...");
+        // Solo un mensaje crítico para confirmar que el servidor está online en Railway
+        System.out.println("Servidor Binario iniciado y esperando conexiones...");
     }
 
-    /* 
-     * main: Punto de entrada de la aplicación. Configura el puerto de escucha 
-     * (priorizando las variables de entorno para su despliegue en Railway) y 
-     * arranca el servidor WebSocket.
+    /**
+     * main
+     * Punto de arranque de la aplicación.
+     * Incorpora un gancho de apagado (Shutdown Hook) para asegurar el cierre 
+     * del pool de base de datos en caso de reinicio del servicio en la nube.
      */
     public static void main(String[] args) {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            ConexionBBDD.cerrarPool();
+        }));
+
         int puerto = 8080;
         String portEnv = System.getenv("PORT");
         if (portEnv != null && !portEnv.isEmpty()) {

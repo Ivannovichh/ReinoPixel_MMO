@@ -1,34 +1,24 @@
 extends Control
 
-# Variables de estado del sistema
-var socket := WebSocketPeer.new()
-var identificador_usuario = ""
-var password_usuario = ""
-var tipo_accion = ""
-var intentando_conexion = false
-var autenticado = false
 var cargando = false
 var progreso_carga := 0.0
+var simulacion_autenticacion = false
 
-# Referencias a los nodos de la interfaz según tu jerarquía actual
 @onready var input_login_correo = $CenterContainer/CajaVertical/LineEditCorreo
 @onready var input_login_pass = $CenterContainer/CajaVertical/LineEditPassword
 @onready var boton_login = $CenterContainer/CajaVertical/ButtonLogin
 @onready var lbl_error_login = $CenterContainer/CajaVertical/LabelError
-
 @onready var barra_progreso_login = $ProgressBar
 @onready var btn_ojo_login = $PasswordEye
 @onready var boton_cerrar_login = $ButtonCerrar
 @onready var boton_ir_registro = $ButtonRegistrar
 
-# Recursos
 var icono_ojo_abierto = preload("res://ojo.png")
 var icono_ojo_cerrado = preload("res://ojo-cerrado.png")
 
 """
 _ready
-Configuración inicial de la interfaz. 
-Conecta las señales de los botones y establece la conexión WebSocket inicial con Railway.
+Configuración de eventos visuales y conexión de señales hacia el Autoload de red.
 """
 func _ready():
 	input_login_pass.secret = true
@@ -36,16 +26,19 @@ func _ready():
 	boton_login.pressed.connect(self._al_pulsar_login)
 	boton_cerrar_login.pressed.connect(func(): get_tree().quit())
 	btn_ojo_login.pressed.connect(self._alternar_ojo_login)
+	boton_ir_registro.pressed.connect(func(): get_tree().change_scene_to_file("res://InterfazRegistrar.tscn"))
 	
-	# Conexión del botón para cambiar a la escena de Registro
-	boton_ir_registro.pressed.connect(self._al_ir_a_registro)
+	var boton_ayuda = get_node_or_null("ButtonAyuda")
+	if boton_ayuda:
+		boton_ayuda.pressed.connect(func(): OS.shell_open("https://reinopixelweb-production.up.railway.app/"))
 	
-	socket.connect_to_url("wss://reinopixelmmo-production.up.railway.app")
+	RedGlobal.evento_login.connect(self._al_recibir_respuesta_login)
+	RedGlobal.conectar_al_servidor()
 	barra_progreso_login.hide()
 
 """
 _alternar_ojo_login
-Alterna la visibilidad de la contraseña en el campo de texto.
+Conmuta la visibilidad de los caracteres ocultos por seguridad.
 """
 func _alternar_ojo_login():
 	input_login_pass.secret = not input_login_pass.secret
@@ -53,79 +46,53 @@ func _alternar_ojo_login():
 
 """
 _al_pulsar_login
-Valida los campos y dispara la lógica de conexión.
+Empaqueta y transmite las credenciales de la cuenta en formato binario puro.
 """
 func _al_pulsar_login():
-	identificador_usuario = input_login_correo.text.strip_edges()
-	password_usuario = input_login_pass.text
-	tipo_accion = "AUTH"
+	var correo = input_login_correo.text.strip_edges()
+	var pass_text = input_login_pass.text
 	
-	if identificador_usuario == "" or password_usuario == "":
+	if correo == "" or pass_text == "":
 		lbl_error_login.text = "Rellena el correo y la contraseña."
 		return
 		
-	_iniciar_proceso_red()
-
-"""
-_iniciar_proceso_red
-Prepara los estados para la carga y deshabilita los controles durante la espera.
-"""
-func _iniciar_proceso_red():
-	intentando_conexion = true
 	cargando = true
 	progreso_carga = 15.0
-	
 	input_login_correo.editable = false
 	input_login_pass.editable = false
 	boton_login.disabled = true
-	
 	barra_progreso_login.show()
 	barra_progreso_login.value = progreso_carga
-
-"""
-_al_ir_a_registro
-Cambia la escena actual a la pantalla de registro.
-"""
-func _al_ir_a_registro():
-	get_tree().change_scene_to_file("res://InterfazRegistrar.tscn")
+	
+	var buffer = RedGlobal.crear_buffer_salida(RedGlobal.C_LOGIN)
+	RedGlobal.escribir_string_en_buffer(buffer, correo)
+	RedGlobal.escribir_string_en_buffer(buffer, pass_text)
+	RedGlobal.enviar_buffer(buffer)
 
 """
 _process
-Mantiene el socket activo y gestiona las respuestas del servidor en Railway.
+Maneja en exclusiva la interpolación visual de la barra de carga.
 """
 func _process(delta):
-	socket.poll()
-	var estado = socket.get_ready_state()
-	
-	# Animación de carga
-	if cargando and not autenticado:
+	if cargando and not simulacion_autenticacion:
 		progreso_carga = min(progreso_carga + (delta * 50.0), 90.0)
 		barra_progreso_login.value = progreso_carga
-	
-	# Envío de datos al abrir conexión
-	if intentando_conexion and estado == WebSocketPeer.STATE_OPEN:
-		var paquete = tipo_accion + ":" + identificador_usuario + ":" + password_usuario
-		socket.put_packet(paquete.to_utf8_buffer())
-		intentando_conexion = false
-		
-	# Procesamiento de respuesta
-	if estado == WebSocketPeer.STATE_OPEN:
-		while socket.get_available_packet_count() > 0:
-			var respuesta = socket.get_packet().get_string_from_utf8()
-			
-			if respuesta.begins_with("AUTH_OK"):
-				autenticado = true
-				barra_progreso_login.value = 100.0
-				
-				await get_tree().create_timer(0.4).timeout
-				
-				# Transición a la pantalla de selección de personajes
-				get_tree().change_scene_to_file("res://SeleccionPersonaje.tscn")
-				
-			elif respuesta.begins_with("AUTH_ERROR"):
-				cargando = false
-				barra_progreso_login.hide()
-				input_login_correo.editable = true
-				input_login_pass.editable = true
-				boton_login.disabled = false
-				lbl_error_login.text = "Error: Usuario o contraseña incorrectos."
+
+"""
+_al_recibir_respuesta_login
+Callback de red encargado de liberar la UI o cambiar a la escena de juego.
+"""
+func _al_recibir_respuesta_login(exito: bool):
+	if exito:
+		simulacion_autenticacion = true
+		barra_progreso_login.value = 100.0
+		await get_tree().create_timer(0.4).timeout
+		get_tree().change_scene_to_file("res://SeleccionPersonaje.tscn")
+	else:
+		cargando = false
+		simulacion_autenticacion = false
+		barra_progreso_login.hide()
+		input_login_correo.editable = true
+		input_login_pass.editable = true
+		boton_login.disabled = false
+		lbl_error_login.text = "Error: Usuario o contraseña incorrectos."
