@@ -13,7 +13,14 @@ func _ready():
 	$PanelCentral/ListaPersonajes.clear()
 	$PanelCentral/HBoxBotones/BtnEntrarMundo.disabled = true
 	
-	print("Solicitando personajes al servidor...")
+	var btn_cerrar_sesion = get_node_or_null("ButtonLogout")
+	if btn_cerrar_sesion:
+		btn_cerrar_sesion.pressed.connect(self._al_cerrar_sesion)
+		
+	var btn_salir = get_node_or_null("ButtonSalir")
+	if btn_salir:
+		btn_salir.pressed.connect(func(): get_tree().quit())
+		
 
 """
 cargar_lista_desde_servidor
@@ -45,7 +52,6 @@ func _on_lista_personajes_item_selected(index: int):
 	var texto_item = $PanelCentral/ListaPersonajes.get_item_text(index)
 	personaje_seleccionado = texto_item.split(" ")[0]
 	$PanelCentral/HBoxBotones/BtnEntrarMundo.disabled = false
-	print("Personaje seleccionado: ", personaje_seleccionado)
 
 """
 _on_btn_crear_nuevo_pressed
@@ -54,8 +60,6 @@ Se ejecuta al pulsar el botón de creación. Abandona la escena actual
 y carga la pantalla de personalización de apariencia y rasgos.
 """
 func _on_btn_crear_nuevo_pressed():
-	print("Cambiando a escena de creación...")
-	# CAMBIA ESTA RUTA si tu archivo de creación tiene otro nombre o carpeta
 	get_tree().change_scene_to_file("res://CreacionDePersonaje.tscn")
 
 """
@@ -66,6 +70,5 @@ qué entidad debe instanciar y asignar a la sesión actual del jugador.
 """
 func _on_btn_entrar_mundo_pressed():
 	if personaje_seleccionado != "":
-		print("Entrando al mundo con: ", personaje_seleccionado)
 		# RedGlobal.enviar_paquete("ENTRAR_MUNDO:" + personaje_seleccionado)
-		# get_tree().change_scene_to_file("res://Mundo.tscn")
+		get_tree().change_scene_to_file("res://Mundo.tscn")

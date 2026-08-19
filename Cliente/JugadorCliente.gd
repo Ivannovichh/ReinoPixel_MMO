@@ -30,5 +30,3 @@ func _process(_delta):
 	if estado == WebSocketPeer.STATE_OPEN:
 		while socket.get_available_packet_count() > 0:
 			var respuesta = socket.get_packet().get_string_from_utf8()
-			# Aquí procesaremos las respuestas generales del servidor para el mundo
-			print("Mensaje del servidor: ", respuesta)
