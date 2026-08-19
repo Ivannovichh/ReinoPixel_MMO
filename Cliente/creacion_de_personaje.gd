@@ -58,9 +58,16 @@ func _ready():
 	var btn_volver = get_node_or_null("MarginContainer/DistribucionGlobal/BarraInferior/BtnVolver")
 	if btn_volver: btn_volver.pressed.connect(func(): get_tree().change_scene_to_file("res://SeleccionPersonaje.tscn"))
 		
+	"""
+ 	Conexión segura del botón confirmar.
+	Verifica si la señal ya fue conectada previamente desde el editor visual de Godot.
+	Si no está conectada, realiza el enlace por código para evitar errores de duplicidad.
+ 	"""
 	var btn_confirmar = get_node_or_null("MarginContainer/DistribucionGlobal/BarraInferior/BtnConfirmar")
-	if btn_confirmar: btn_confirmar.pressed.connect(self._on_btn_confirmar_pressed)
-		
+	if btn_confirmar: 
+		if not btn_confirmar.pressed.is_connected(self._on_btn_confirmar_pressed):
+			btn_confirmar.pressed.connect(self._on_btn_confirmar_pressed)
+	
 	RedGlobal.evento_creacion_personaje.connect(self._al_recibir_respuesta_creacion)
 	actualizar_interfaz()
 

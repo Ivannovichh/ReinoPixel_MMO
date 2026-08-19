@@ -4,7 +4,7 @@ extends Node
 RedGlobal
 Singleton (Autoload) encargado de mantener la conexión WebSocket viva a través de todas 
 las escenas del juego. Centraliza el enrutamiento y la conversión de variables a 
-paquetes de binario puro (bytes) para lograr máxima velocidad de red.
+paquetes de binario puro (bytes) usando el estándar Big Endian.
 """
 
 signal evento_login(exito: bool)
@@ -39,6 +39,15 @@ func conectar_al_servidor():
 		socket.connect_to_url(url_servidor)
 
 """
+desconectar_servidor
+Cierra la conexión activa de WebSocket limpiamente y reinicia el estado interno.
+Ideal para cuando el usuario decide cerrar sesión y volver a la pantalla de Login.
+"""
+func desconectar_servidor():
+	if estado_conexion != WebSocketPeer.STATE_CLOSED:
+		socket.close()
+
+"""
 _process
 Mantiene el latido del socket activo. Captura el flujo de bytes entrante y 
 lo deriva al método de procesamiento sin congelar el hilo principal de Godot.
@@ -54,8 +63,8 @@ func _process(_delta: float):
 
 """
 _procesar_paquete_entrante
-Lee el identificador (Opcode) del flujo binario e invoca las señales pertinentes 
-para notificar a la interfaz de usuario sobre las decisiones del servidor.
+Lee el identificador (Opcode) del flujo binario en Big Endian e invoca 
+las señales pertinentes para notificar a la interfaz de usuario.
 """
 func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 	var buffer = StreamPeerBuffer.new()
@@ -74,17 +83,33 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 		S_LISTA_PERSONAJES:
 			var cantidad = buffer.get_32() 
 			var lista = []
+			
 			for i in range(cantidad):
+				# Desempaquetamos los 7 atributos exactos en el orden enviado por Java
 				var p_id = buffer.get_32()
+				var p_jugador_id = buffer.get_32()
 				var p_nombre = _leer_string_de_buffer(buffer)
 				var p_nivel = buffer.get_32()
-				lista.append({"id": p_id, "nombre": p_nombre, "nivel": p_nivel})
+				var p_x = buffer.get_float()
+				var p_y = buffer.get_float()
+				var p_z = buffer.get_float()
+				
+				lista.append({
+					"id": p_id,
+					"jugador_id": p_jugador_id,
+					"nombre": p_nombre,
+					"nivel": p_nivel,
+					"pos_x": p_x,
+					"pos_y": p_y,
+					"pos_z": p_z
+				})
+				
 			evento_personajes_recibidos.emit(lista)
 
 """
 crear_buffer_salida
-Reserva un espacio en memoria e inyecta el identificador (Opcode) de la acción,
-preparándolo para concatenar más variables antes de su envío.
+Reserva un espacio en memoria e inyecta el identificador (Opcode) de la acción
+configurado en Big Endian para asegurar la compatibilidad con el servidor Java.
 """
 func crear_buffer_salida(opcode: int) -> StreamPeerBuffer:
 	var buffer = StreamPeerBuffer.new()
@@ -94,8 +119,7 @@ func crear_buffer_salida(opcode: int) -> StreamPeerBuffer:
 
 """
 escribir_string_en_buffer
-Transforma una cadena de texto en bytes UTF-8 y le antepone su longitud (16 bits)
-para que Java sepa exactamente cuántos bytes debe leer.
+Transforma una cadena de texto en bytes UTF-8 y le antepone su longitud (16 bits).
 """
 func escribir_string_en_buffer(buffer: StreamPeerBuffer, texto: String):
 	var bytes_texto = texto.to_utf8_buffer()

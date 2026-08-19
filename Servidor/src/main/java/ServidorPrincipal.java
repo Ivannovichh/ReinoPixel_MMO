@@ -146,7 +146,7 @@ public class ServidorPrincipal extends WebSocketServer {
     /**
      * manejarPeticionPersonajesBinario
      * Solicita la lista de personajes y la empaqueta dinámicamente en binario.
-     * Estructura del paquete de salida: [Opcode] [Cantidad de Personajes] -> Bucle( [Id] [Nombre] [Nivel] )
+     * Estructura: [Opcode] [Cantidad] -> Bucle( [Id] [JugadorId] [Nombre] [Nivel] [PosX] [PosY] [PosZ] )
      */
     private void manejarPeticionPersonajesBinario(WebSocket conn) {
         JugadorServidor jugador = sesionesActivas.get(conn);
@@ -158,8 +158,12 @@ public class ServidorPrincipal extends WebSocketServer {
                 
                 for (Personaje p : lista) {
                     respuesta.escribirInt(p.getId());
+                    respuesta.escribirInt(p.getJugadorId());
                     respuesta.escribirString(p.getNombre());
                     respuesta.escribirInt(p.getNivel());
+                    respuesta.escribirFloat(p.getPosX());
+                    respuesta.escribirFloat(p.getPosY());
+                    respuesta.escribirFloat(p.getPosZ());
                 }
                 conn.send(respuesta.obtenerBytes());
             });

@@ -54,3 +54,11 @@ Comienza la instancia global del mapa y su posterior control físico.
 func _on_btn_entrar_mundo_pressed():
 	if personaje_seleccionado != "":
 		get_tree().change_scene_to_file("res://Mundo.tscn")
+		
+"""
+_al_cerrar_sesion
+Ejecuta el protocolo de desconexión de red y devuelve al cliente a la pantalla inicial.
+"""
+func _al_cerrar_sesion():
+	RedGlobal.desconectar_servidor()
+	get_tree().change_scene_to_file("res://InterfazLogin.tscn")

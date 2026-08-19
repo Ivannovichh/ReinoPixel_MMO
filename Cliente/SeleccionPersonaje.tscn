@@ -57,7 +57,7 @@ text = "Entrar al Reino
 layout_mode = 2
 text = "Crear Nuevo Personaje"
 
-[node name="ButtonLogOut" type="Button" parent="." unique_id=368495618]
+[node name="ButtonLogout" type="Button" parent="." unique_id=368495618]
 layout_mode = 1
 anchors_preset = 2
 anchor_top = 1.0

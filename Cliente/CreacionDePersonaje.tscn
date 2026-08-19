@@ -37,151 +37,151 @@ theme_override_constants/margin_bottom = 30
 layout_mode = 2
 theme_override_constants/separation = 30
 
-[node name="MenuPestañas" type="TabContainer" parent="MarginContainer/DistribucionGlobal" unique_id=1384705078]
+[node name="MenuPestanas" type="TabContainer" parent="MarginContainer/DistribucionGlobal" unique_id=1384705078]
 layout_mode = 2
 size_flags_vertical = 3
 current_tab = 0
 
-[node name="Apariencia" type="HBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas" unique_id=1789360838]
+[node name="Apariencia" type="HBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas" unique_id=1789360838]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="ContenedorEspejo" type="SubViewportContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia" unique_id=274317319]
+[node name="ContenedorEspejo" type="SubViewportContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia" unique_id=274317319]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 stretch = true
 
-[node name="Espejo3D" type="SubViewport" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ContenedorEspejo" unique_id=180375993]
+[node name="Espejo3D" type="SubViewport" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ContenedorEspejo" unique_id=180375993]
 handle_input_locally = false
 size = Vector2i(918, 928)
 render_target_update_mode = 4
 
-[node name="ColumnaAspecto" type="ScrollContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia" unique_id=868085255]
+[node name="ColumnaAspecto" type="ScrollContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia" unique_id=868085255]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto" unique_id=818129670]
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto" unique_id=818129670]
 layout_mode = 2
 theme_override_constants/margin_left = 20
 theme_override_constants/margin_top = 20
 theme_override_constants/margin_right = 20
 theme_override_constants/margin_bottom = 20
 
-[node name="ListaOpciones" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer" unique_id=984452834]
+[node name="ListaOpciones" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer" unique_id=984452834]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="LabelApariencia" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=2021486818]
+[node name="LabelApariencia" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=2021486818]
 layout_mode = 2
 theme_override_font_sizes/font_size = 30
 text = "Apariencia"
 
-[node name="LabelGenero" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=262108495]
+[node name="LabelGenero" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=262108495]
 layout_mode = 2
 text = "Género"
 
-[node name="DropGenero" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1987669186]
+[node name="DropGenero" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1987669186]
 layout_mode = 2
 
-[node name="LabelCuerpo" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=2089478992]
+[node name="LabelCuerpo" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=2089478992]
 layout_mode = 2
 text = "Cuerpo"
 
-[node name="DropCuerpo" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1600192264]
+[node name="DropCuerpo" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1600192264]
 layout_mode = 2
 
-[node name="LabelPiel" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1403884602]
+[node name="LabelPiel" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1403884602]
 layout_mode = 2
 text = "Piel"
 
-[node name="ColorPiel" type="ColorPickerButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=828669766]
+[node name="ColorPiel" type="ColorPickerButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=828669766]
 layout_mode = 2
 text = "Seleccion de tonalidad de piel"
 
-[node name="LabelPeinado" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1899700943]
+[node name="LabelPeinado" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1899700943]
 layout_mode = 2
 text = "Peinado"
 
-[node name="DropPelo" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=654536465]
+[node name="DropPelo" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=654536465]
 layout_mode = 2
 
-[node name="LabelOjos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1584638255]
+[node name="LabelOjos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1584638255]
 layout_mode = 2
 text = "Forma de Ojos"
 
-[node name="DropOjosForma" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=965321714]
+[node name="DropOjosForma" type="OptionButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=965321714]
 layout_mode = 2
 
-[node name="LabelColorOjos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=603631616]
+[node name="LabelColorOjos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=603631616]
 layout_mode = 2
 text = "Color de los Ojos"
 
-[node name="ColorOjos" type="ColorPickerButton" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=989555648]
+[node name="ColorOjos" type="ColorPickerButton" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=989555648]
 layout_mode = 2
 text = "Seleccion de color de ojos
 "
 
-[node name="LabelAltura" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1965326254]
+[node name="LabelAltura" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1965326254]
 layout_mode = 2
 text = "Altura"
 
-[node name="SliderAltura" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1872990347]
+[node name="SliderAltura" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1872990347]
 layout_mode = 2
 min_value = 150.0
 max_value = 210.0
 value = 180.0
 
-[node name="LabelMusculo" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1428379823]
+[node name="LabelMusculo" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1428379823]
 layout_mode = 2
 text = "Musculatura"
 
-[node name="SliderMusculo" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1652886671]
+[node name="SliderMusculo" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=1652886671]
 layout_mode = 2
 value = 50.0
 
-[node name="LabelEdad" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=330488448]
+[node name="LabelEdad" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=330488448]
 layout_mode = 2
 text = "Edad"
 
-[node name="SliderEdad" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=351082012]
+[node name="SliderEdad" type="HSlider" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ColumnaAspecto/MarginContainer/ListaOpciones" unique_id=351082012]
 layout_mode = 2
 min_value = 18.0
 value = 60.0
 
-[node name="Rasgos" type="HBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas" unique_id=474248495]
+[node name="Rasgos" type="HBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas" unique_id=474248495]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="ColumnaDisponibles" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos" unique_id=1497646312]
+[node name="ColumnaDisponibles" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos" unique_id=1497646312]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LabelRasgos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaDisponibles" unique_id=745049242]
+[node name="LabelRasgos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaDisponibles" unique_id=745049242]
 layout_mode = 2
 text = "Rasgos Disponibles"
 
-[node name="ListaRasgos" type="ItemList" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaDisponibles" unique_id=465871745]
+[node name="ListaRasgos" type="ItemList" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaDisponibles" unique_id=465871745]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ColumnaElegidos" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos" unique_id=782291716]
+[node name="ColumnaElegidos" type="VBoxContainer" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos" unique_id=782291716]
 custom_minimum_size = Vector2(500, 0)
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="LabelPuntos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaElegidos" unique_id=1401233720]
+[node name="LabelPuntos" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaElegidos" unique_id=1401233720]
 layout_mode = 2
 text = "Puntos: 0"
 
-[node name="LabelRasgosSel" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaElegidos" unique_id=506795667]
+[node name="LabelRasgosSel" type="Label" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaElegidos" unique_id=506795667]
 layout_mode = 2
 text = "Rasgos Seleccionados"
 
-[node name="ListaSeleccionados" type="ItemList" parent="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaElegidos" unique_id=1883306418]
+[node name="ListaSeleccionados" type="ItemList" parent="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaElegidos" unique_id=1883306418]
 layout_mode = 2
 size_flags_vertical = 3
 
@@ -211,6 +211,6 @@ placeholder_text = "Nombre del personaje..."
 layout_mode = 2
 text = "Crear Personaje"
 
-[connection signal="gui_input" from="MarginContainer/DistribucionGlobal/MenuPestañas/Apariencia/ContenedorEspejo" to="." method="_on_contenedor_espejo_gui_input"]
-[connection signal="multi_selected" from="MarginContainer/DistribucionGlobal/MenuPestañas/Rasgos/ColumnaDisponibles/ListaRasgos" to="." method="_on_lista_rasgos_multi_selected"]
+[connection signal="gui_input" from="MarginContainer/DistribucionGlobal/MenuPestanas/Apariencia/ContenedorEspejo" to="." method="_on_contenedor_espejo_gui_input"]
+[connection signal="multi_selected" from="MarginContainer/DistribucionGlobal/MenuPestanas/Rasgos/ColumnaDisponibles/ListaRasgos" to="." method="_on_lista_rasgos_multi_selected"]
 [connection signal="pressed" from="MarginContainer/DistribucionGlobal/BarraInferior/BtnConfirmar" to="." method="_on_btn_confirmar_pressed"]
