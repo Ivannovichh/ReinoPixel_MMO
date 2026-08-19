@@ -59,6 +59,7 @@ para notificar a la interfaz de usuario sobre las decisiones del servidor.
 """
 func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = true
 	buffer.data_array = paquete_bytes
 	var opcode = buffer.get_8()
 	
@@ -87,6 +88,7 @@ preparándolo para concatenar más variables antes de su envío.
 """
 func crear_buffer_salida(opcode: int) -> StreamPeerBuffer:
 	var buffer = StreamPeerBuffer.new()
+	buffer.big_endian = true
 	buffer.put_8(opcode)
 	return buffer
 
