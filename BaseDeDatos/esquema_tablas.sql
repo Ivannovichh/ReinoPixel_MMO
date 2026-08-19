@@ -26,3 +26,16 @@ CREATE TABLE tokens_recuperacion (
     codigo VARCHAR(50) UNIQUE NOT NULL,
     fecha_expiracion TIMESTAMP NOT NULL
 );
+
+CREATE TABLE personajes (
+    id SERIAL PRIMARY KEY,
+    -- Clave foránea: Vincula el personaje a la cuenta. Si se borra la cuenta, se borra el personaje.
+    jugador_id INTEGER REFERENCES jugadores(id) ON DELETE CASCADE,
+    nombre VARCHAR(50) UNIQUE NOT NULL,
+    nivel INTEGER DEFAULT 1,
+    -- Coordenadas espaciales para el mundo 3D (o 2D si ignoras la Z)
+    pos_x REAL DEFAULT 0.0,
+    pos_y REAL DEFAULT 0.0,
+    pos_z REAL DEFAULT 0.0,
+    ultima_conexion TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

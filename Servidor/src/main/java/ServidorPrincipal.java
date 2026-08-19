@@ -6,10 +6,11 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
+import java.util.List; 
 
 public class ServidorPrincipal extends WebSocketServer {
 
-    private HashMap<WebSocket, String> sesionesActivas = new HashMap<>();
+    private HashMap<WebSocket, JugadorServidor> sesionesActivas = new HashMap<>();
 
     public ServidorPrincipal(InetSocketAddress address) {
         super(address);
@@ -49,9 +50,16 @@ public class ServidorPrincipal extends WebSocketServer {
         else if (message.startsWith("AUTH:")) {
             manejarAutenticacion(conn, message);
         }
+        else if (message.startsWith("PEDIR_PERSONAJES")) { 
+            manejarPeticionPersonajes(conn);
+        }
+        else if (message.startsWith("CREAR_PERSONAJE:")) { 
+            manejarCreacionPersonaje(conn, message);
+        }
         else if (message.startsWith("POS:")) {
             String coordenadas = message.substring(4);
-            String usuario = sesionesActivas.getOrDefault(conn, "Desconocido");
+            JugadorServidor jugador = sesionesActivas.get(conn);
+            String usuario = (jugador != null) ? jugador.getCorreo() : "Desconocido";
             System.out.println("Jugador (" + usuario + ") en coords: " + coordenadas);
         }
     }
@@ -94,12 +102,52 @@ public class ServidorPrincipal extends WebSocketServer {
             boolean autenticado = GestorAutenticacion.autenticarJugador(correo, password);
             
             if (autenticado) {
-                sesionesActivas.put(conn, correo);
+             
+                JugadorServidor nuevoJugador = new JugadorServidor(conn, correo, 1);
+                sesionesActivas.put(conn, nuevoJugador);
+                
                 System.out.println("¡Login exitoso en BBDD para: " + correo + "!");
                 conn.send("AUTH_OK");
             } else {
                 System.out.println("Fallo de autenticación para: " + correo);
                 conn.send("AUTH_ERROR: Usuario no encontrado o credenciales inválidas");
+            }
+        }
+    }
+
+    /* 
+     * AÑADIDO - manejarPeticionPersonajes: 
+     * Consulta la BBDD a través del GestorPersonajes para obtener la lista de 
+     * avatares del jugador y se los envía a Godot formateados como un string.
+     */
+    private void manejarPeticionPersonajes(WebSocket conn) {
+        JugadorServidor jugador = sesionesActivas.get(conn);
+        if (jugador != null) {
+            List<Personaje> lista = GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta());
+            
+            StringBuilder respuesta = new StringBuilder("LISTA_PERSONAJES:");
+            for (Personaje p : lista) {
+                respuesta.append(p.getNombre()).append(",").append(p.getNivel()).append(";");
+            }
+            conn.send(respuesta.toString());
+        }
+    }
+
+    /* 
+     * Extrae el nombre deseado para el nuevo avatar y solicita su inserción 
+     * en PostgreSQL. Devuelve confirmación al cliente y refresca la lista.
+     */
+    private void manejarCreacionPersonaje(WebSocket conn, String message) {
+        JugadorServidor jugador = sesionesActivas.get(conn);
+        if (jugador != null) {
+            String nombrePersonaje = message.split(":")[1].trim();
+            boolean creado = GestorPersonajes.crearPersonaje(jugador.getIdCuenta(), nombrePersonaje);
+            
+            if (creado) {
+                conn.send("CREAR_OK");
+                manejarPeticionPersonajes(conn); // Refresca la lista automáticamente
+            } else {
+                conn.send("CREAR_ERROR: El nombre ya existe");
             }
         }
     }

@@ -12,14 +12,13 @@ var puede_moverse = false
 var tiempo_envio = 0.0
 const INTERVALO_ENVIO = 0.1 
 
-# -------------------------------------------------------------------------
-# _unhandled_input(event)
-# Captura los eventos de entrada del hardware (ratón, teclado) que no han 
-# sido consumidos por la interfaz de usuario.
-# Su función aquí es leer el movimiento del ratón para rotar al personaje 
-# sobre el eje Y y orbitar el brazo de la cámara (SpringArm3D) en el eje X,
-# pero solo si el jugador ya se ha conectado (puede_moverse).
-# -------------------------------------------------------------------------
+"""
+_unhandled_input
+Captura los eventos de entrada del hardware (ratón, teclado) que no han 
+sido consumidos por la interfaz de usuario. Su función es leer el movimiento 
+del ratón para rotar al personaje sobre el eje Y y orbitar el brazo de la cámara 
+(SpringArm3D) en el eje X, solo si el movimiento está habilitado.
+"""
 func _unhandled_input(event):
 	if not puede_moverse:
 		return
@@ -29,15 +28,13 @@ func _unhandled_input(event):
 		spring_arm.rotate_x(-event.relative.y * SENSITIVITY)
 		spring_arm.rotation.x = clamp(spring_arm.rotation.x, -PI/4, PI/4)
 
-
-# -------------------------------------------------------------------------
-# _physics_process(delta)
-# Es el bucle físico del motor que se ejecuta constantemente en cada frame.
-# Se encarga de aplicar la gravedad constante, procesar el salto, calcular los 
-# vectores de dirección basándose en las teclas pulsadas y mover al personaje.
-# Además, gestiona un temporizador (tiempo_envio) para empaquetar y enviar 
-# periódicamente las coordenadas del jugador al servidor Java mediante el socket.
-# -------------------------------------------------------------------------
+"""
+_physics_process
+Bucle físico del motor ejecutado en cada frame. Aplica la gravedad constante, 
+procesa el salto, calcula los vectores de movimiento y desplaza al personaje. 
+Gestiona un temporizador (tiempo_envio) para empaquetar y transmitir periódicamente 
+las coordenadas globales del jugador al backend Java mediante el websocket.
+"""
 func _physics_process(delta):
 	if not puede_moverse:
 		return
@@ -72,14 +69,11 @@ func _physics_process(delta):
 			if cliente_red.socket.get_ready_state() == WebSocketPeer.STATE_OPEN:
 				var mensaje_pos = "POS:" + str(global_position.x) + "," + str(global_position.y) + "," + str(global_position.z)
 				cliente_red.socket.put_packet(mensaje_pos.to_utf8_buffer())
-				print("Enviando paquete: ", mensaje_pos)
 
-
-# -------------------------------------------------------------------------
-# habilitar_movimiento()
-# Cambia el estado lógico interno del personaje. 
-# Es un método público diseñado para ser llamado desde otros scripts 
-# (como el cliente de red) una vez que el menú de login desaparece.
-# -------------------------------------------------------------------------
+"""
+habilitar_movimiento
+Método de control de estado interno. Permite cambiar el booleano `puede_moverse` 
+a verdadero para liberar los Controles del jugador una vez superada la fase de menús.
+"""
 func habilitar_movimiento():
 	puede_moverse = true

@@ -1,0 +1,58 @@
+[gd_scene format=3 uid="uid://cc86lalotsjr7"]
+
+[ext_resource type="Script" uid="uid://ccus3u1sibad8" path="res://seleccion_personaje.gd" id="1_iq6wu"]
+
+[node name="SeleccionPersonaje" type="Control" unique_id=498839578]
+custom_minimum_size = Vector2(1920, 1080)
+custom_maximum_size = Vector2(1920, 1080)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("1_iq6wu")
+
+[node name="Panel" type="Panel" parent="." unique_id=789230040]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="PanelCentral" type="VBoxContainer" parent="." unique_id=1091919259]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -148.0
+offset_top = -31.0
+offset_right = 252.0
+offset_bottom = 89.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Label" type="Label" parent="PanelCentral" unique_id=210641438]
+layout_mode = 2
+text = "Seleccion de personaje"
+
+[node name="ListaPersonajes" type="ItemList" parent="PanelCentral" unique_id=1424690151]
+layout_mode = 2
+
+[node name="HBoxBotones" type="HBoxContainer" parent="PanelCentral" unique_id=326274170]
+custom_minimum_size = Vector2(120, 35)
+layout_mode = 2
+
+[node name="BtnEntrarMundo" type="Button" parent="PanelCentral/HBoxBotones" unique_id=1524784448]
+layout_mode = 2
+text = "Entrar al Reino
+"
+
+[node name="BtnCrearNuevo" type="Button" parent="PanelCentral/HBoxBotones" unique_id=1654057809]
+layout_mode = 2
+text = "Crear Nuevo Personaje"
+
+[connection signal="item_selected" from="PanelCentral/ListaPersonajes" to="." method="_on_lista_personajes_item_selected"]
+[connection signal="pressed" from="PanelCentral/HBoxBotones/BtnEntrarMundo" to="." method="_on_btn_entrar_mundo_pressed"]
+[connection signal="pressed" from="PanelCentral/HBoxBotones/BtnCrearNuevo" to="." method="_on_btn_crear_nuevo_pressed"]
