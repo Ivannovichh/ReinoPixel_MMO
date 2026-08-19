@@ -190,6 +190,14 @@ layout_mode = 2
 theme_override_constants/separation = 20
 alignment = 1
 
+[node name="BtnVolver" type="Button" parent="MarginContainer/DistribucionGlobal/BarraInferior" unique_id=1556563015]
+layout_mode = 2
+text = "Volver"
+
+[node name="ControlEspaciador" type="Control" parent="MarginContainer/DistribucionGlobal/BarraInferior" unique_id=1415204150]
+layout_mode = 2
+size_flags_horizontal = 3
+
 [node name="LabelNombre" type="Label" parent="MarginContainer/DistribucionGlobal/BarraInferior" unique_id=716101933]
 layout_mode = 2
 text = "Nombre"

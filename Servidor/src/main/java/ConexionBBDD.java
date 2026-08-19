@@ -8,10 +8,10 @@ public class ConexionBBDD {
 
     public static Connection obtenerConexion() throws SQLException {
         // Depuración: Imprimimos para ver qué hay disponible en el entorno
-        System.out.println("--- COMPROBANDO VARIABLES DE ENTORNO ---");
-        System.out.println("DATABASE_URL presente: " + (System.getenv("DATABASE_URL") != null));
-        System.out.println("PGHOST presente: " + (System.getenv("PGHOST") != null));
-        System.out.println("----------------------------------------");
+        //System.out.println("--- COMPROBANDO VARIABLES DE ENTORNO ---");
+        //System.out.println("DATABASE_URL presente: " + (System.getenv("DATABASE_URL") != null));
+        //System.out.println("PGHOST presente: " + (System.getenv("PGHOST") != null));
+        //System.out.println("----------------------------------------");
 
         // 1. Intentar con DATABASE_URL (La más común en Railway)
         String databaseUrl = System.getenv("DATABASE_URL");
