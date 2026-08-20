@@ -1,35 +1,32 @@
 package plantillas;
 
-import org.java_websocket.WebSocket;
+import io.netty.channel.Channel;
 
 /**
  * Clase JugadorServidor.
  * Mantiene el contexto de una sesión de red activa y autenticada.
- * Actúa como puente entre la conexión cruda del WebSocket y la lógica de juego,
- * almacenando las credenciales de la cuenta y el avatar que se está controlando.
+ * Actúa como puente entre el Channel de Netty y la lógica de juego.
  */
 public class JugadorServidor {
     
-    private WebSocket conexion;
+    private Channel conexion; // Ahora usamos Channel de Netty
     private String correo;
     private int idCuenta; 
     private Personaje personajeActivo;
 
     /**
      * Constructor de la sesión del jugador.
-     * Se inicializa inmediatamente después de que el gestor de autenticación
-     * valida las credenciales. El personaje activo comienza nulo hasta que 
-     * el cliente selecciona uno explícitamente.
+     * Actualizado para aceptar un Channel de Netty en lugar de un WebSocket.
      */
-    public JugadorServidor(WebSocket conexion, String correo, int idCuenta) {
+    public JugadorServidor(Channel conexion, String correo, int idCuenta) {
         this.conexion = conexion;
         this.correo = correo;
         this.idCuenta = idCuenta;
         this.personajeActivo = null; 
     }
 
-    /* GETTERS Y SETTERS ESTÁNDAR */
-    public WebSocket getConexion() { return conexion; }
+    /* GETTERS Y SETTERS */
+    public Channel getConexion() { return conexion; }
     public String getCorreo() { return correo; }
     public int getIdCuenta() { return idCuenta; }
     public Personaje getPersonajeActivo() { return personajeActivo; }

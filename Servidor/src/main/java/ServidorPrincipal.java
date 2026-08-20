@@ -1,7 +1,3 @@
-/*
- * Importación de las herramientas internas del proyecto distribuidas en paquetes.
- * Permite al núcleo de red acceder a la base de datos, entidades y gestores lógicos.
- */
 import basededatos.ConexionBBDD;
 import gestores.GestorAutenticacion;
 import gestores.GestorPersonajes;
@@ -11,264 +7,157 @@ import red.Opcodes;
 import red.PaqueteEntrada;
 import red.PaqueteSalida;
 
-// Importaciones de librerías externas y Java
-import org.java_websocket.server.WebSocketServer;
-import org.java_websocket.WebSocket;
-import org.java_websocket.handshake.ClientHandshake;
-import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.HttpServerCodec;
+import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
+import io.netty.buffer.ByteBuf;
+import java.util.concurrent.ConcurrentHashMap;
 
+public class ServidorPrincipal {
 
-/**
- * Clase ServidorPrincipal.
- * Núcleo del backend de red. Gestiona las conexiones entrantes a través de WebSockets
- * y enruta los paquetes de datos binarios (0s y 1s) hacia los gestores asíncronos.
- * Adaptado para soportar alto rendimiento y bajo consumo de ancho de banda.
- */
-public class ServidorPrincipal extends WebSocketServer {
+    private static ConcurrentHashMap<Channel, JugadorServidor> sesionesActivas = new ConcurrentHashMap<>();
 
-    private HashMap<WebSocket, JugadorServidor> sesionesActivas = new HashMap<>();
-
-    /**
-     * Constructor del servidor.
-     * Define la dirección IP y el puerto de escucha utilizando la red subyacente.
-     */
-    public ServidorPrincipal(InetSocketAddress address) {
-        super(address);
-    }
-
-    @Override
-    public void onOpen(WebSocket conn, ClientHandshake handshake) {
-        // Conexión abierta silenciosamente para mantener los logs limpios.
-    }
-
-    @Override
-    public void onClose(WebSocket conn, int code, String reason, boolean remote) {
-        sesionesActivas.remove(conn);
-    }
-
-    /**
-     * onMessage (Texto Plano)
-     * Como hemos migrado a binario puro, las peticiones de texto plano se ignoran
-     * intencionalmente. Esto evita que clientes desactualizados o intentos de 
-     * inyección saturen el procesamiento del servidor.
-     */
-    @Override
-    public void onMessage(WebSocket conn, String message) {
-        // Vacío por diseño.
-    }
-
-    /**
-     * onMessage (Binario)
-     * Punto de entrada principal para toda la comunicación de alta velocidad.
-     * Transforma el ByteBuffer nativo en nuestra herramienta PaqueteEntrada 
-     * para extraer las variables de forma secuencial.
-     */
-    @Override
-    public void onMessage(WebSocket conn, ByteBuffer message) {
-        PaqueteEntrada paquete = new PaqueteEntrada(message.array());
-        procesarPaqueteBinario(conn, paquete);
-    }
-
-    /**
-     * procesarPaqueteBinario
-     * Enrutador central. Extrae el primer byte (Opcode) del flujo de datos
-     * y determina qué acción solicita el cliente (Godot) basándose en el diccionario.
-     */
-    private void procesarPaqueteBinario(WebSocket conn, PaqueteEntrada paquete) {
-        byte opcode = paquete.leerByte();
-
-        switch (opcode) {
-            case Opcodes.C_REGISTRO:
-                manejarRegistroBinario(conn, paquete);
-                break;
-            case Opcodes.C_LOGIN:
-                manejarAutenticacionBinario(conn, paquete);
-                break;
-            case Opcodes.C_PEDIR_PERSONAJES:
-                manejarPeticionPersonajesBinario(conn);
-                break;
-            case Opcodes.C_CREAR_PERSONAJE:
-                manejarCreacionPersonajeBinario(conn, paquete);
-                break;
-            case Opcodes.C_SELECCIONAR_PERSONAJE:
-                manejarSeleccionPersonajeBinario(conn, paquete);
-                break;
-            case Opcodes.C_MOVER_PERSONAJE:
-                manejarMovimientoBinario(conn, paquete);
-                break;
-            default:
-                // Ignorar opcodes desconocidos por seguridad.
-                break;
-        }
-    }
-
-    /**
-     * manejarRegistroBinario
-     * Extrae el correo y contraseña del paquete secuencial y ejecuta el registro 
-     * en BBDD de forma asíncrona. Construye y envía un paquete binario de respuesta.
-     */
-    private void manejarRegistroBinario(WebSocket conn, PaqueteEntrada paquete) {
-        String correo = paquete.leerString();
-        String password = paquete.leerString();
-        
-        GestorAutenticacion.registrarJugador(correo, password).thenAccept(registrado -> {
-            PaqueteSalida respuesta = new PaqueteSalida();
-            if (registrado) {
-                respuesta.escribirByte(Opcodes.S_REGISTRO_OK);
-            } else {
-                respuesta.escribirByte(Opcodes.S_REGISTRO_ERROR);
-            }
-            conn.send(respuesta.obtenerBytes());
-        });
-    }
-
-    /**
-     * manejarAutenticacionBinario
-     * Verifica credenciales en segundo plano. Si son correctas, vincula la conexión
-     * a una instancia de JugadorServidor en la memoria RAM y autoriza la entrada.
-     */
-    private void manejarAutenticacionBinario(WebSocket conn, PaqueteEntrada paquete) {
-        String correo = paquete.leerString();
-        String password = paquete.leerString();
-        
-        GestorAutenticacion.autenticarJugador(correo, password).thenAccept(autenticado -> {
-            PaqueteSalida respuesta = new PaqueteSalida();
-            if (autenticado) {
-                JugadorServidor nuevoJugador = new JugadorServidor(conn, correo, 1);
-                sesionesActivas.put(conn, nuevoJugador);
-                respuesta.escribirByte(Opcodes.S_LOGIN_OK);
-            } else {
-                respuesta.escribirByte(Opcodes.S_LOGIN_ERROR);
-            }
-            conn.send(respuesta.obtenerBytes());
-        });
-    }
-
-    /**
-     * manejarPeticionPersonajesBinario
-     * Solicita la lista de personajes y la empaqueta dinámicamente en binario.
-     * Estructura: [Opcode] [Cantidad] -> Bucle( [Id] [JugadorId] [Nombre] [Nivel] [PosX] [PosY] [PosZ] )
-     */
-    private void manejarPeticionPersonajesBinario(WebSocket conn) {
-        JugadorServidor jugador = sesionesActivas.get(conn);
-        
-        if (jugador != null) {
-            System.out.println("[RED] Petición de personajes para cuenta ID: " + jugador.getIdCuenta());
-            
-            GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
-                System.out.println("[BBDD] Personajes encontrados en tabla: " + lista.size());
-                
-                PaqueteSalida respuesta = new PaqueteSalida();
-                respuesta.escribirByte(Opcodes.S_LISTA_PERSONAJES);
-                respuesta.escribirInt(lista.size()); 
-                
-                for (Personaje p : lista) {
-                    respuesta.escribirInt(p.getId());
-                    respuesta.escribirInt(p.getJugadorId());
-                    respuesta.escribirString(p.getNombre());
-                    respuesta.escribirInt(p.getNivel());
-                    respuesta.escribirFloat(p.getPosX());
-                    respuesta.escribirFloat(p.getPosY());
-                    respuesta.escribirFloat(p.getPosZ());
-                }
-                conn.send(respuesta.obtenerBytes());
-                System.out.println("[RED] Paquete S_LISTA_PERSONAJES enviado a Godot.");
-            });
-        } else {
-            System.err.println("[ERROR] ¡La conexión no tiene sesión activa (jugador es null)!");
-        }
-    }
-    
-    /**
-     * manejarCreacionPersonajeBinario
-     * Extrae el nombre deseado del flujo binario, crea el personaje y devuelve 
-     * un estado (1 para éxito, 0 para error). Si tiene éxito, solicita el refresco automático.
-     */
-    private void manejarCreacionPersonajeBinario(WebSocket conn, PaqueteEntrada paquete) {
-        JugadorServidor jugador = sesionesActivas.get(conn);
-        if (jugador != null) {
-            String nombrePersonaje = paquete.leerString();
-            
-            GestorPersonajes.crearPersonaje(jugador.getIdCuenta(), nombrePersonaje).thenAccept(creado -> {
-                PaqueteSalida respuesta = new PaqueteSalida();
-                respuesta.escribirByte(Opcodes.S_CREAR_PERSONAJE_RES);
-                respuesta.escribirByte(creado ? 1 : 0);
-                conn.send(respuesta.obtenerBytes());
-                
-                if (creado) {
-                    manejarPeticionPersonajesBinario(conn);
-                }
-            });
-        }
-    }
-
-    /**
-     * manejarSeleccionPersonajeBinario
-     * Recibe el ID del personaje seleccionado por el usuario y lo asigna
-     * como el avatar activo en la RAM del servidor para las interacciones del mundo 3D.
-     */
-    private void manejarSeleccionPersonajeBinario(WebSocket conn, PaqueteEntrada paquete) {
-        JugadorServidor jugador = sesionesActivas.get(conn);
-        if (jugador != null) {
-            int idPersonajeElegido = paquete.leerInt();
-            
-            GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
-                for (Personaje p : lista) {
-                    if (p.getId() == idPersonajeElegido) {
-                        jugador.setPersonajeActivo(p);
-                        System.out.println("[MUNDO] Personaje activo asignado: " + p.getNombre() + " (ID: " + p.getId() + ")");
-                        break;
-                    }
-                }
-            });
-        }
-    }
-
-    /**
-     * manejarMovimientoBinario
-     * Función ultra rápida que actualiza en memoria las coordenadas espaciales.
-     * Extrae los 3 floats (X, Y, Z) y sobrescribe los valores sin tocar la BBDD.
-     */
-    private void manejarMovimientoBinario(WebSocket conn, PaqueteEntrada paquete) {
-        JugadorServidor jugador = sesionesActivas.get(conn);
-        if (jugador != null && jugador.getPersonajeActivo() != null) {
-            float x = paquete.leerFloat();
-            float y = paquete.leerFloat();
-            float z = paquete.leerFloat();
-            
-            jugador.getPersonajeActivo().actualizarPosicion(x, y, z);
-        }
-    }
-
-    @Override
-    public void onError(WebSocket conn, Exception ex) {
-        // Previene volcados de memoria por desconexiones forzadas del cliente
-    }
-
-    @Override
-    public void onStart() {
-        System.out.println("Servidor Binario iniciado y esperando conexiones...");
-    }
-
-    /**
-     * main
-     * Punto de arranque de la aplicación.
-     * Incorpora un gancho de apagado (Shutdown Hook) para asegurar el cierre 
-     * del pool de base de datos en caso de reinicio del servicio en la nube.
-     */
     public static void main(String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            ConexionBBDD.cerrarPool();
-        }));
+        Runtime.getRuntime().addShutdownHook(new Thread(ConexionBBDD::cerrarPool));
 
-        int puerto = 8080;
-        String portEnv = System.getenv("PORT");
-        if (portEnv != null && !portEnv.isEmpty()) {
-            puerto = Integer.parseInt(portEnv);
+        int puerto = System.getenv("PORT") != null ? Integer.parseInt(System.getenv("PORT")) : 8080;
+        
+        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
+        EventLoopGroup workerGroup = new NioEventLoopGroup();
+
+        try {
+            ServerBootstrap b = new ServerBootstrap();
+            b.group(bossGroup, workerGroup)
+             .channel(NioServerSocketChannel.class)
+             .childHandler(new ChannelInitializer<SocketChannel>() {
+                @Override
+                protected void initChannel(SocketChannel ch) {
+                    ChannelPipeline p = ch.pipeline();
+                    p.addLast(new HttpServerCodec());
+                    p.addLast(new HttpObjectAggregator(65536));
+                    p.addLast(new WebSocketServerProtocolHandler("/")); 
+                    p.addLast(new ManejadorNetty()); 
+                }
+             })
+             .option(ChannelOption.SO_BACKLOG, 128)
+             .childOption(ChannelOption.SO_KEEPALIVE, true);
+
+            System.out.println("Servidor Netty NIO iniciado en puerto " + puerto + "...");
+            b.bind(puerto).sync().channel().closeFuture().sync();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        } finally {
+            workerGroup.shutdownGracefully();
+            bossGroup.shutdownGracefully();
+        }
+    }
+
+    public static class ManejadorNetty extends SimpleChannelInboundHandler<ByteBuf> {
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) { sesionesActivas.remove(ctx.channel()); }
+
+        @Override
+        protected void channelRead0(ChannelHandlerContext ctx, ByteBuf msg) {
+            byte[] bytes = new byte[msg.readableBytes()];
+            msg.readBytes(bytes);
+            procesarPaqueteBinario(ctx.channel(), new PaqueteEntrada(bytes));
         }
 
-        new ServidorPrincipal(new InetSocketAddress("0.0.0.0", puerto)).start();
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) { ctx.close(); }
     }
+
+    private static void procesarPaqueteBinario(Channel ch, PaqueteEntrada p) {
+        byte op = p.leerByte();
+        switch (op) {
+            case Opcodes.C_REGISTRO: manejarRegistroBinario(ch, p); break;
+            case Opcodes.C_LOGIN: manejarAutenticacionBinario(ch, p); break;
+            case Opcodes.C_PEDIR_PERSONAJES: manejarPeticionPersonajesBinario(ch); break;
+            case Opcodes.C_CREAR_PERSONAJE: manejarCreacionPersonajeBinario(ch, p); break;
+            case Opcodes.C_SELECCIONAR_PERSONAJE: manejarSeleccionPersonajeBinario(ch, p); break;
+            case Opcodes.C_MOVER_PERSONAJE: manejarMovimientoBinario(ch, p); break;
+        }
+    }
+
+    private static void manejarRegistroBinario(Channel ch, PaqueteEntrada p) {
+        GestorAutenticacion.registrarJugador(p.leerString(), p.leerString()).thenAccept(res -> {
+            PaqueteSalida ps = new PaqueteSalida();
+            ps.escribirByte(res ? Opcodes.S_REGISTRO_OK : Opcodes.S_REGISTRO_ERROR);
+            enviar(ch, ps);
+        });
+    }
+
+    private static void manejarAutenticacionBinario(Channel ch, PaqueteEntrada p) {
+        String corr = p.leerString();
+        String pass = p.leerString();
+        
+        GestorAutenticacion.autenticarJugador(corr, pass).thenAccept(auth -> {
+
+            if (auth) {
+                sesionesActivas.put(ch, new JugadorServidor(ch, corr, 1));
+            }
+            
+            PaqueteSalida ps = new PaqueteSalida();
+            ps.escribirByte(auth ? Opcodes.S_LOGIN_OK : Opcodes.S_LOGIN_ERROR);
+            enviar(ch, ps);
+        });
+    }
+
+    private static void manejarPeticionPersonajesBinario(Channel ch) {
+        JugadorServidor j = sesionesActivas.get(ch);
+        if (j != null) {
+            GestorPersonajes.cargarPersonajesDeJugador(j.getIdCuenta()).thenAccept(lista -> {
+                PaqueteSalida ps = new PaqueteSalida();
+                ps.escribirByte(Opcodes.S_LISTA_PERSONAJES);
+                ps.escribirInt(lista.size());
+                for (Personaje p : lista) {
+                    ps.escribirInt(p.getId()); ps.escribirInt(p.getJugadorId()); ps.escribirString(p.getNombre());
+                    ps.escribirInt(p.getNivel()); ps.escribirFloat(p.getPosX()); ps.escribirFloat(p.getPosY()); ps.escribirFloat(p.getPosZ());
+                }
+                enviar(ch, ps);
+            });
+        }
+    }
+
+    private static void manejarCreacionPersonajeBinario(Channel ch, PaqueteEntrada p) {
+        JugadorServidor j = sesionesActivas.get(ch);
+        if (j != null) {
+            GestorPersonajes.crearPersonaje(j.getIdCuenta(), p.leerString()).thenAccept(res -> {
+                PaqueteSalida ps = new PaqueteSalida();
+                ps.escribirByte(Opcodes.S_CREAR_PERSONAJE_RES);
+                ps.escribirByte(res ? 1 : 0);
+                enviar(ch, ps);
+                if (res) manejarPeticionPersonajesBinario(ch);
+            });
+        }
+    }
+
+    private static void manejarSeleccionPersonajeBinario(Channel ch, PaqueteEntrada p) {
+        JugadorServidor j = sesionesActivas.get(ch);
+        if (j != null) {
+            int id = p.leerInt();
+            GestorPersonajes.cargarPersonajesDeJugador(j.getIdCuenta()).thenAccept(lista -> {
+                for (Personaje per : lista) if (per.getId() == id) j.setPersonajeActivo(per);
+            });
+        }
+    }
+
+    private static void manejarMovimientoBinario(Channel ch, PaqueteEntrada p) {
+        JugadorServidor j = sesionesActivas.get(ch);
+        if (j != null && j.getPersonajeActivo() != null) j.getPersonajeActivo().actualizarPosicion(p.leerFloat(), p.leerFloat(), p.leerFloat());
+    }
+
+    private static void enviar(Channel ch, PaqueteSalida ps) {
+        byte[] bytes = ps.obtenerBytes();
+        ByteBuf buf = ch.alloc().buffer(bytes.length);
+        buf.writeBytes(bytes);
+        ch.writeAndFlush(buf);
+    }
+
+    
 }

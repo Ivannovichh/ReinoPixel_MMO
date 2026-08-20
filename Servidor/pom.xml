@@ -14,15 +14,15 @@
     </properties>
 
     <dependencies>
+
         <!-- 
-            Dependencia de WebSockets para la red del servidor 
+            NIO NETTY para la conexion evitando usar WEBSOCKETS 
         -->
         <dependency>
-            <groupId>org.java-websocket</groupId>
-            <artifactId>Java-WebSocket</artifactId>
-            <version>1.5.3</version>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-all</artifactId>
+            <version>4.1.100.Final</version>
         </dependency>
-
         <!-- 
             Librería para la encriptación segura de contraseñas (BCrypt) 
         -->
