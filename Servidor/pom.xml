@@ -23,6 +23,15 @@
             <artifactId>netty-all</artifactId>
             <version>4.1.100.Final</version>
         </dependency>
+
+        <!-- 
+            KCP para velocidad de UDP con TCP 
+        -->
+        <dependency>
+            <groupId>io.jpower.kcp</groupId>
+            <artifactId>kcp-netty</artifactId>
+            <version>1.4.3</version>
+        </dependency>
         <!-- 
             Librería para la encriptación segura de contraseñas (BCrypt) 
         -->

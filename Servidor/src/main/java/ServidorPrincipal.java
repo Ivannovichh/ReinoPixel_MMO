@@ -7,55 +7,46 @@ import red.Opcodes;
 import red.PaqueteEntrada;
 import red.PaqueteSalida;
 
-import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.handler.codec.http.HttpObjectAggregator;
-import io.netty.handler.codec.http.HttpServerCodec;
-import io.netty.handler.codec.http.websocketx.WebSocketServerProtocolHandler;
 import io.netty.buffer.ByteBuf;
 import java.util.concurrent.ConcurrentHashMap;
+
+// Importaciones de KCP
+import io.jpower.kcp.netty.UkcpServerChannel;
+import io.jpower.kcp.netty.UkcpChannel;
+import io.netty.bootstrap.Bootstrap;
 
 public class ServidorPrincipal {
 
     private static ConcurrentHashMap<Channel, JugadorServidor> sesionesActivas = new ConcurrentHashMap<>();
 
     public static void main(String[] args) {
-        Runtime.getRuntime().addShutdownHook(new Thread(ConexionBBDD::cerrarPool));
+    Runtime.getRuntime().addShutdownHook(new Thread(ConexionBBDD::cerrarPool));
 
-        int puerto = System.getenv("PORT") != null ? Integer.parseInt(System.getenv("PORT")) : 8080;
-        
-        EventLoopGroup bossGroup = new NioEventLoopGroup(1);
-        EventLoopGroup workerGroup = new NioEventLoopGroup();
+    int puerto = System.getenv("PORT") != null ? Integer.parseInt(System.getenv("PORT")) : 8080;
+    
+    EventLoopGroup group = new NioEventLoopGroup();
 
-        try {
-            ServerBootstrap b = new ServerBootstrap();
-            b.group(bossGroup, workerGroup)
-             .channel(NioServerSocketChannel.class)
-             .childHandler(new ChannelInitializer<SocketChannel>() {
-                @Override
-                protected void initChannel(SocketChannel ch) {
-                    ChannelPipeline p = ch.pipeline();
-                    p.addLast(new HttpServerCodec());
-                    p.addLast(new HttpObjectAggregator(65536));
-                    p.addLast(new WebSocketServerProtocolHandler("/")); 
-                    p.addLast(new ManejadorNetty()); 
-                }
-             })
-             .option(ChannelOption.SO_BACKLOG, 128)
-             .childOption(ChannelOption.SO_KEEPALIVE, true);
+    try {
+        Bootstrap b = new Bootstrap();
+        b.group(group)
+         .channel(UkcpServerChannel.class) // Usamos UkcpServerChannel
+         .handler(new ChannelInitializer<UkcpChannel>() { // Usamos UkcpChannel
+             @Override
+             protected void initChannel(UkcpChannel ch) {
+                 ch.pipeline().addLast(new ManejadorNetty());
+             }
+         });
 
-            System.out.println("Servidor Netty NIO iniciado en puerto " + puerto + "...");
-            b.bind(puerto).sync().channel().closeFuture().sync();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } finally {
-            workerGroup.shutdownGracefully();
-            bossGroup.shutdownGracefully();
-        }
+        System.out.println("Servidor KCP/Netty definitivo iniciado en puerto " + puerto + "...");
+        b.bind(puerto).sync().channel().closeFuture().sync();
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    } finally {
+        group.shutdownGracefully();
     }
+}
 
     public static class ManejadorNetty extends SimpleChannelInboundHandler<ByteBuf> {
         @Override
@@ -84,6 +75,8 @@ public class ServidorPrincipal {
         }
     }
 
+    // --- MÉTODOS DE LÓGICA ---
+
     private static void manejarRegistroBinario(Channel ch, PaqueteEntrada p) {
         GestorAutenticacion.registrarJugador(p.leerString(), p.leerString()).thenAccept(res -> {
             PaqueteSalida ps = new PaqueteSalida();
@@ -95,13 +88,8 @@ public class ServidorPrincipal {
     private static void manejarAutenticacionBinario(Channel ch, PaqueteEntrada p) {
         String corr = p.leerString();
         String pass = p.leerString();
-        
         GestorAutenticacion.autenticarJugador(corr, pass).thenAccept(auth -> {
-
-            if (auth) {
-                sesionesActivas.put(ch, new JugadorServidor(ch, corr, 1));
-            }
-            
+            if (auth) sesionesActivas.put(ch, new JugadorServidor(ch, corr, 1));
             PaqueteSalida ps = new PaqueteSalida();
             ps.escribirByte(auth ? Opcodes.S_LOGIN_OK : Opcodes.S_LOGIN_ERROR);
             enviar(ch, ps);
@@ -158,6 +146,4 @@ public class ServidorPrincipal {
         buf.writeBytes(bytes);
         ch.writeAndFlush(buf);
     }
-
-    
 }
