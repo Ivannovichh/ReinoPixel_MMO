@@ -48,18 +48,24 @@ func _alternar_ojo_login():
 _al_pulsar_login
 Empaqueta y transmite las credenciales de la cuenta en formato binario puro.
 """
+"""
+_al_pulsar_login
+Método interno llamado al presionar el botón de inicio de sesión.
+Valida los campos de texto, bloquea la interfaz (cargando = true) para 
+evitar múltiples envíos, empaqueta el correo y la contraseña, y los envía 
+al servidor a través de la sesión KCP.
+"""
 func _al_pulsar_login():
 	var correo = input_login_correo.text.strip_edges()
 	var pass_text = input_login_pass.text
 	
-	# --- AÑADE ESTO PARA VER QUÉ ESTÁS ENVIANDO ---
-	print("Enviando correo desde UI: '", correo, "' | Contraseña: '", pass_text, "'")
-	# ---------------------------------------------
-	
+	# Validación básica de seguridad en el lado del cliente
 	if correo == "" or pass_text == "":
 		lbl_error_login.text = "Rellena el correo y la contraseña."
 		return
 		
+	# Activamos el estado de carga: esto bloquea la UI temporalmente.
+	
 	cargando = true
 	progreso_carga = 15.0
 	input_login_correo.editable = false
@@ -68,6 +74,7 @@ func _al_pulsar_login():
 	barra_progreso_login.show()
 	barra_progreso_login.value = progreso_carga
 	
+	# Creamos el paquete, escribimos los strings a 16 bits y disparamos
 	var buffer = RedGlobal.crear_buffer_salida(RedGlobal.C_LOGIN)
 	RedGlobal.escribir_string_en_buffer(buffer, correo)
 	RedGlobal.escribir_string_en_buffer(buffer, pass_text)

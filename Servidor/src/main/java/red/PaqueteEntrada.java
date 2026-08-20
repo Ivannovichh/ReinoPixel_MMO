@@ -69,28 +69,31 @@ public class PaqueteEntrada {
     /**
      * leerString
      * Método genérico interno encargado de extraer cadenas de texto dinámicas.
+     * Como el protocolo KCP ya ha limpiado las cabeceras de red, el flujo 
+     * contiene los datos puros. Leemos un entero corto (16 bits) para averiguar
+     * la longitud y extraemos exactamente esos bytes.
      */
     public String leerString() {
+        // Verificación defensiva interna: aseguramos que existen al menos 2 bytes
+        // en el búfer para poder extraer la longitud de la cadena sin lanzar excepciones.
         if (buffer.remaining() < 2) {
-            System.err.println("¡CRÍTICO! No quedan suficientes bytes para leer la longitud del string. Quedan: " + buffer.remaining());
+            System.err.println("¡CRÍTICO! Búfer insuficiente para leer la longitud del string.");
             return "";
         }
         
-        short longitudShort = buffer.getShort();
-        int longitud = Short.toUnsignedInt(longitudShort);
+        // Extraemos un entero corto (16 bits) sin signo.
+        // Esto sincroniza perfectamente con el put_16() de Godot.
+        int longitud = Short.toUnsignedInt(buffer.getShort());
         
-        System.out.println("DEBUG LEER STRING -> Longitud leída (short): " + longitudShort + " | Como entero: " + longitud + " | Bytes restantes: " + buffer.remaining());
-        
+        // Validación cruzada para evitar desbordamientos si el cliente envía datos corruptos.
         if (longitud <= 0 || longitud > buffer.remaining()) {
-            System.err.println("¡CRÍTICO! Longitud inválida o excede el buffer restante.");
             return "";
         }
         
+        // Extracción limpia y volcado de memoria a la cadena final.
         byte[] bytes = new byte[longitud];
         buffer.get(bytes);
         
-        String textoLeido = new String(bytes, StandardCharsets.UTF_8);
-        System.out.println("DEBUG LEER STRING -> Texto decodificado con éxito: [" + textoLeido + "]");
-        return textoLeido;
+        return new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
     }
 }
