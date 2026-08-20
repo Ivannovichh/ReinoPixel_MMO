@@ -13,14 +13,15 @@ import org.mindrot.jbcrypt.BCrypt;
  * GestorAutenticacion.
  * Aísla la lógica de seguridad y acceso de cuentas de usuario.
  * Garantiza que las consultas de validación e inserción operen de forma asíncrona,
- * impidiendo que posibles micro-cortes en la base de datos frenen el flujo de red.
+ * impidiendo que posibles micro-bloqueos en la base de datos frenen el flujo de red.
  */
 public class GestorAutenticacion {
 
     /**
      * registrarJugador
-     * Toma las credenciales puras enviadas por el cliente, genera un cifrado seguro
-     * irreversible y ordena su almacenamiento en una tarea paralela.
+     * Método genérico asíncrono que toma las credenciales puras enviadas por el cliente, 
+     * genera un cifrado seguro e irreversible mediante BCrypt y ordena su almacenamiento 
+     * en PostgreSQL utilizando el pool de conexiones.
      */
     public static CompletableFuture<Boolean> registrarJugador(String correo, String passwordTextoPlano) {
         return CompletableFuture.supplyAsync(() -> {
@@ -36,6 +37,7 @@ public class GestorAutenticacion {
                 return true;
                 
             } catch (SQLException e) {
+                System.err.println("Fallo al registrar jugador (posible correo duplicado): " + e.getMessage());
                 return false; 
             }
         });
@@ -43,8 +45,9 @@ public class GestorAutenticacion {
 
     /**
      * autenticarJugador
-     * Recupera el hash cifrado de la cuenta solicitada y ejecuta una comparación
-     * matemática de seguridad en segundo plano para aprobar o denegar el acceso.
+     * Método genérico asíncrono que recupera el hash cifrado de la cuenta solicitada
+     * y ejecuta una comparación matemática de seguridad en segundo plano para aprobar 
+     * o denegar el acceso a la red.
      */
     public static CompletableFuture<Boolean> autenticarJugador(String correo, String passwordTextoPlano) {
         return CompletableFuture.supplyAsync(() -> {
@@ -62,6 +65,7 @@ public class GestorAutenticacion {
                     }
                 }
             } catch (SQLException e) {
+                System.err.println("Fallo al autenticar jugador: " + e.getMessage());
                 return false;
             }
             return false;

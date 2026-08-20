@@ -36,8 +36,9 @@ public class Personaje {
 
     /**
      * actualizarPosicion
-     * Modifica las coordenadas espaciales actuales del personaje en la memoria RAM.
-     * Se invoca en cada tick de movimiento validado por la red.
+     * Método interno modificado en cada tick de red.
+     * Sobrescribe las coordenadas espaciales actuales del personaje en la memoria RAM
+     * cuando el servidor recibe un paquete de movimiento validado desde el cliente KCP.
      */
     public void actualizarPosicion(float nuevaX, float nuevaY, float nuevaZ) {
         this.posX = nuevaX;
@@ -47,9 +48,10 @@ public class Personaje {
 
     /**
      * empaquetarPosicionBinaria
-     * Construye un paquete de red ultraligero con la posición actual del personaje.
-     * Inyecta el Opcode de actualización de posición, el ID del personaje y sus
-     * tres coordenadas espaciales en un flujo de bytes puros para su retransmisión.
+     * Método genérico de serialización ultrarrápida.
+     * Construye un paquete de red inyectando el Opcode correspondiente, el ID 
+     * único del personaje y sus tres coordenadas espaciales en un flujo de bytes puros,
+     * dejándolo listo para su retransmisión al resto de jugadores del mapa.
      */
     public byte[] empaquetarPosicionBinaria() {
         PaqueteSalida paquete = new PaqueteSalida();
@@ -61,12 +63,18 @@ public class Personaje {
         return paquete.obtenerBytes();
     }
 
-    /* GETTERS Y SETTERS ESTÁNDAR */
+    /**
+     * GETTERS Y SETTERS
+     * Métodos de acceso estándar para la lectura y escritura de atributos 
+     * encapsulados desde otros gestores del servidor.
+     */
     public int getId() { return id; }
     public int getJugadorId() { return jugadorId; }
     public String getNombre() { return nombre; }
+    
     public int getNivel() { return nivel; }
     public void setNivel(int nivel) { this.nivel = nivel; }
+    
     public float getPosX() { return posX; }
     public float getPosY() { return posY; }
     public float getPosZ() { return posZ; }

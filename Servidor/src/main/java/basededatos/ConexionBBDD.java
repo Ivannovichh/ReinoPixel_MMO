@@ -17,26 +17,25 @@ public class ConexionBBDD {
 
     /**
      * Bloque estático de inicialización.
-     * Configura los parámetros de acceso a la base de datos local (localhost) 
-     * y los límites de la piscina de conexiones (HikariCP) al arrancar el servidor.
+     * Se ejecuta de forma automática al arrancar el servidor Java. 
+     * Configura el enrutamiento directo a la base de datos local y establece las 
+     * optimizaciones de HikariCP (límites de conexiones simultáneas y caché de sentencias 
+     * preparadas) para agilizar las operaciones recurrentes.
+     * Si la conexión falla, aborta la ejecución del servidor por seguridad.
      */
     static {
         HikariConfig config = new HikariConfig();
         
         try {
-            // Configuración directa para PostgreSQL en entorno local (PGAdmin)
-            // Asegúrate de cambiar 'reinopixel_db' y la contraseña por los tuyos reales
             config.setJdbcUrl("jdbc:postgresql://localhost:5432/reinopixel_db");
             config.setUsername("postgres");
-            config.setPassword("ADMIN"); // <-- CAMBIA ESTO por tu contraseña de PGAdmin
+            config.setPassword("ADMIN"); 
             
-            // Configuración del Pool de conexiones para MMORPG
             config.setMaximumPoolSize(20);
             config.setMinimumIdle(5);
             config.setIdleTimeout(30000);
             config.setConnectionTimeout(10000);
             
-            // Optimizaciones de caché para consultas recurrentes (Selects/Updates)
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
@@ -45,14 +44,16 @@ public class ConexionBBDD {
             System.out.println("BBDD: HikariCP conectado con éxito a PostgreSQL Local.");
             
         } catch (Exception e) {
-            System.err.println("FALLO CRITICO: No se pudo enlazar la BBDD local.");
-            e.printStackTrace(); // Imprime el error exacto por si falla la contraseña
+            System.err.println("FALLO CRÍTICO: No se pudo enlazar la BBDD local. Revisa que PostgreSQL esté encendido y la contraseña sea correcta.");
+            e.printStackTrace(); 
+            System.exit(1); 
         }
     }
 
     /**
      * obtenerConexion
-     * Proporciona una conexión activa extraída de la piscina en memoria.
+     * Método genérico que proporciona una conexión activa extraída de la piscina en memoria.
+     * Al estar gestionada por Hikari, el tiempo de entrega es prácticamente instantáneo.
      */
     public static Connection obtenerConexion() throws SQLException {
         return dataSource.getConnection();
@@ -60,7 +61,9 @@ public class ConexionBBDD {
 
     /**
      * cerrarPool
-     * Finaliza la comunicación con el servidor PostgreSQL liberando los recursos de red.
+     * Método interno de apagado.
+     * Finaliza la comunicación con el servidor PostgreSQL liberando los recursos de red
+     * de manera controlada para evitar conexiones huérfanas o fugas de memoria al cerrar la app.
      */
     public static void cerrarPool() {
         if (dataSource != null && !dataSource.isClosed()) {

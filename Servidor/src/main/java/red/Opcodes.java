@@ -3,8 +3,8 @@ package red;
 /**
  * Clase Opcodes.
  * Diccionario estático que define los identificadores numéricos de cada acción.
- * Sustituye a las cadenas de texto (ej. "AUTH", "POS") por un único byte,
- * acelerando drásticamente el enrutamiento de paquetes en el servidor.
+ * Sustituye a las cadenas de texto por un único byte,
+ * acelerando drásticamente el enrutamiento de paquetes en el servidor KCP.
  */
 public class Opcodes {
     

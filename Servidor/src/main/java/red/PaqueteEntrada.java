@@ -6,8 +6,9 @@ import java.nio.charset.StandardCharsets;
 /**
  * Clase PaqueteEntrada.
  * Envoltorio para ByteBuffer que facilita la lectura secuencial de los 
- * paquetes binarios recibidos desde los clientes.
- * Mantiene un cursor interno que avanza automáticamente a medida que se extraen datos.
+ * paquetes binarios recibidos desde los clientes a través de UDP/KCP.
+ * Mantiene un cursor interno que avanza automáticamente a medida que se extraen 
+ * datos, garantizando una lectura estricta en formato Big Endian.
  */
 public class PaqueteEntrada {
     
@@ -15,8 +16,8 @@ public class PaqueteEntrada {
 
     /**
      * Constructor principal.
-     * Envuelve el array de bytes crudos recibido desde la red en un buffer
-     * de lectura gestionado por Java NIO.
+     * Envuelve el array de bytes crudos recibido desde la red nativa en un buffer
+     * de lectura gestionado por Java NIO, listo para su extracción secuencial.
      */
     public PaqueteEntrada(byte[] datos) {
         this.buffer = ByteBuffer.wrap(datos);
@@ -24,8 +25,9 @@ public class PaqueteEntrada {
 
     /**
      * leerByte
-     * Extrae el siguiente byte (8 bits) del flujo.
-     * Generalmente el primer byte leído siempre es el Opcode.
+     * Método genérico que extrae el siguiente byte (8 bits) del flujo.
+     * Generalmente el primer byte leído en el servidor siempre es el Opcode
+     * que define la acción a realizar.
      */
     public byte leerByte() {
         return buffer.get();
@@ -33,7 +35,8 @@ public class PaqueteEntrada {
 
     /**
      * leerInt
-     * Extrae un número entero (32 bits) del flujo.
+     * Método genérico que extrae un número entero (32 bits) del flujo.
+     * Utilizado para procesar identificadores únicos, variables de estado o cantidades.
      */
     public int leerInt() {
         return buffer.getInt();
@@ -41,7 +44,9 @@ public class PaqueteEntrada {
 
     /**
      * leerFloat
-     * Extrae un número decimal (32 bits), típicamente usado para coordenadas.
+     * Método genérico que extrae un número decimal (32 bits).
+     * Típicamente usado para descifrar las coordenadas espaciales (X, Y, Z) enviadas
+     * por el motor físico del cliente a alta velocidad.
      */
     public float leerFloat() {
         return buffer.getFloat();
@@ -49,9 +54,9 @@ public class PaqueteEntrada {
 
     /**
      * leerString
-     * Extrae una cadena de texto.
-     * Primero lee un 'short' para averiguar cuántos bytes componen el texto,
-     * y luego extrae exactamente esa cantidad para decodificarlos como UTF-8.
+     * Método genérico que extrae una cadena de texto dinámica.
+     * Primero lee un entero corto (16 bits) para averiguar la longitud exacta del texto,
+     * y luego extrae esos bytes específicos para decodificarlos limpiamente como UTF-8.
      */
     public String leerString() {
         short longitud = buffer.getShort();

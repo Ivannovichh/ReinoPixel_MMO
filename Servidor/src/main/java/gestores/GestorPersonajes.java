@@ -14,14 +14,16 @@ import java.util.concurrent.CompletableFuture;
 /**
  * GestorPersonajes.
  * Procesa las transacciones de los avatares del juego en hilos independientes.
- * Encapsula la creación, carga y persistencia de las coordenadas de cada entidad.
+ * Encapsula la creación, carga y persistencia de las coordenadas de cada entidad
+ * interactuando con el pool de conexiones de PostgreSQL.
  */
 public class GestorPersonajes {
 
     /**
      * crearPersonaje
-     * Registra un nuevo avatar asociado a un jugador con estadísticas base
-     * y coordenadas iniciales, delegando la carga a la piscina de conexiones.
+     * Método genérico asíncrono que inserta un nuevo avatar en la base de datos.
+     * Le asigna las estadísticas base (Nivel 1) y las coordenadas iniciales 
+     * de aparición (Spawn point). Devuelve una promesa booleana indicando el éxito.
      */
     public static CompletableFuture<Boolean> crearPersonaje(int jugadorId, String nombrePersonaje) {
         return CompletableFuture.supplyAsync(() -> {
@@ -36,6 +38,7 @@ public class GestorPersonajes {
                 return true;
 
             } catch (SQLException e) {
+                System.err.println("Fallo al crear personaje: " + e.getMessage());
                 return false;
             }
         });
@@ -43,9 +46,10 @@ public class GestorPersonajes {
 
     /**
      * cargarPersonajesDeJugador
-     * Recopila el listado completo de avatares vinculados a una cuenta.
-     * Retorna una promesa que contendrá la lista empaquetada lista para ser procesada
-     * y enviada de vuelta al cliente de Godot.
+     * Método genérico asíncrono que recopila el listado completo de avatares 
+     * vinculados a la cuenta de un usuario recién autenticado.
+     * Transforma las filas SQL en objetos Java instanciables (Plantillas) 
+     * listos para ser empaquetados en Big Endian y enviados al cliente.
      */
     public static CompletableFuture<List<Personaje>> cargarPersonajesDeJugador(int jugadorId) {
         return CompletableFuture.supplyAsync(() -> {
@@ -60,11 +64,17 @@ public class GestorPersonajes {
 
                 while (rs.next()) {
                     listaPersonajes.add(new Personaje(
-                        rs.getInt("id"), rs.getInt("jugador_id"), rs.getString("nombre"),
-                        rs.getInt("nivel"), rs.getFloat("pos_x"), rs.getFloat("pos_y"), rs.getFloat("pos_z")
+                        rs.getInt("id"), 
+                        rs.getInt("jugador_id"), 
+                        rs.getString("nombre"),
+                        rs.getInt("nivel"), 
+                        rs.getFloat("pos_x"), 
+                        rs.getFloat("pos_y"), 
+                        rs.getFloat("pos_z")
                     ));
                 }
             } catch (SQLException e) {
+                System.err.println("Fallo al cargar la lista de personajes: " + e.getMessage());
                 return listaPersonajes; 
             }
             return listaPersonajes;
@@ -73,8 +83,11 @@ public class GestorPersonajes {
     
     /**
      * guardarPosicionPersonaje
-     * Actualiza el estado persistente del personaje en el mundo físico.
-     * Implementado como un proceso "fire-and-forget" que no requiere respuesta.
+     * Método interno de baja frecuencia.
+     * Actualiza el estado persistente del personaje en el mundo de la base de datos.
+     * Está implementado como un proceso "fire-and-forget" que no interrumpe el flujo
+     * del juego, ideal para auto-guardados periódicos (ej: cada 5 minutos) en lugar 
+     * de guardarse en cada tick de movimiento.
      */
     public static CompletableFuture<Void> guardarPosicionPersonaje(Personaje personaje) {
         return CompletableFuture.runAsync(() -> {
@@ -90,7 +103,7 @@ public class GestorPersonajes {
                 pstmt.executeUpdate();
 
             } catch (SQLException e) {
-                // Silenciado intencionalmente para evitar sobrecarga de logs
+                // Silenciado intencionalmente para evitar sobrecarga de logs en los auto-guards
             }
         });
     }
