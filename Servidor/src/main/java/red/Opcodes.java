@@ -13,7 +13,8 @@ public class Opcodes {
     public static final byte C_REGISTRO = 2;
     public static final byte C_PEDIR_PERSONAJES = 3;
     public static final byte C_CREAR_PERSONAJE = 4;
-    public static final byte C_MOVER_PERSONAJE = 5;
+    public static final byte C_SELECCIONAR_PERSONAJE = 5;
+    public static final byte C_MOVER_PERSONAJE = 6;
 
     // Paquetes del Servidor (Java) hacia el Cliente (Godot)
     public static final byte S_LOGIN_OK = 10;

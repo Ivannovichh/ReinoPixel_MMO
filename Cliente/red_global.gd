@@ -16,7 +16,8 @@ const C_LOGIN : int = 1
 const C_REGISTRO : int = 2
 const C_PEDIR_PERSONAJES : int = 3
 const C_CREAR_PERSONAJE : int = 4
-const C_MOVER_PERSONAJE : int = 5
+const C_SELECCIONAR_PERSONAJE : int = 5
+const C_MOVER_PERSONAJE : int = 6
 
 const S_LOGIN_OK : int = 10
 const S_LOGIN_ERROR : int = 11
@@ -41,7 +42,7 @@ func conectar_al_servidor():
 """
 desconectar_servidor
 Cierra la conexión activa de WebSocket limpiamente y reinicia el estado interno.
-Ideal para cuando el usuario decide cerrar sesión y volver a la pantalla de Login.
+Ideal para cuando el usuario decides cerrar sesión y volver a la pantalla de Login.
 """
 func desconectar_servidor():
 	if estado_conexion != WebSocketPeer.STATE_CLOSED:

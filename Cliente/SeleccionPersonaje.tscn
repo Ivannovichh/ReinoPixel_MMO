@@ -36,13 +36,17 @@ offset_right = 252.0
 offset_bottom = 89.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 20
 
 [node name="Label" type="Label" parent="PanelCentral" unique_id=210641438]
 layout_mode = 2
 text = "Seleccion de personaje"
 
 [node name="ListaPersonajes" type="ItemList" parent="PanelCentral" unique_id=1424690151]
+self_modulate = Color(1, 1, 1, 0)
+custom_minimum_size = Vector2(0, 250)
 layout_mode = 2
+size_flags_vertical = 3
 
 [node name="HBoxBotones" type="HBoxContainer" parent="PanelCentral" unique_id=326274170]
 custom_minimum_size = Vector2(120, 35)

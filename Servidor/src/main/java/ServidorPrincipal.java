@@ -92,6 +92,9 @@ public class ServidorPrincipal extends WebSocketServer {
             case Opcodes.C_CREAR_PERSONAJE:
                 manejarCreacionPersonajeBinario(conn, paquete);
                 break;
+            case Opcodes.C_SELECCIONAR_PERSONAJE:
+                manejarSeleccionPersonajeBinario(conn, paquete);
+                break;
             case Opcodes.C_MOVER_PERSONAJE:
                 manejarMovimientoBinario(conn, paquete);
                 break;
@@ -151,12 +154,10 @@ public class ServidorPrincipal extends WebSocketServer {
     private void manejarPeticionPersonajesBinario(WebSocket conn) {
         JugadorServidor jugador = sesionesActivas.get(conn);
         
-        // CHIVATO 1: ¿Existe la sesión en RAM?
         if (jugador != null) {
             System.out.println("[RED] Petición de personajes para cuenta ID: " + jugador.getIdCuenta());
             
             GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
-                // CHIVATO 2: ¿Cuántos personajes ha encontrado PostgreSQL?
                 System.out.println("[BBDD] Personajes encontrados en tabla: " + lista.size());
                 
                 PaqueteSalida respuesta = new PaqueteSalida();
@@ -193,11 +194,33 @@ public class ServidorPrincipal extends WebSocketServer {
             GestorPersonajes.crearPersonaje(jugador.getIdCuenta(), nombrePersonaje).thenAccept(creado -> {
                 PaqueteSalida respuesta = new PaqueteSalida();
                 respuesta.escribirByte(Opcodes.S_CREAR_PERSONAJE_RES);
-                respuesta.escribirByte(creado ? 1 : 0); // Empaquetamos un booleano como byte
+                respuesta.escribirByte(creado ? 1 : 0);
                 conn.send(respuesta.obtenerBytes());
                 
                 if (creado) {
                     manejarPeticionPersonajesBinario(conn);
+                }
+            });
+        }
+    }
+
+    /**
+     * manejarSeleccionPersonajeBinario
+     * Recibe el ID del personaje seleccionado por el usuario y lo asigna
+     * como el avatar activo en la RAM del servidor para las interacciones del mundo 3D.
+     */
+    private void manejarSeleccionPersonajeBinario(WebSocket conn, PaqueteEntrada paquete) {
+        JugadorServidor jugador = sesionesActivas.get(conn);
+        if (jugador != null) {
+            int idPersonajeElegido = paquete.leerInt();
+            
+            GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
+                for (Personaje p : lista) {
+                    if (p.getId() == idPersonajeElegido) {
+                        jugador.setPersonajeActivo(p);
+                        System.out.println("[MUNDO] Personaje activo asignado: " + p.getNombre() + " (ID: " + p.getId() + ")");
+                        break;
+                    }
                 }
             });
         }
@@ -226,7 +249,6 @@ public class ServidorPrincipal extends WebSocketServer {
 
     @Override
     public void onStart() {
-        // Solo un mensaje crítico para confirmar que el servidor está online en Railway
         System.out.println("Servidor Binario iniciado y esperando conexiones...");
     }
 
