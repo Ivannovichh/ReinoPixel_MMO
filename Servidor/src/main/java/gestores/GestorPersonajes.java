@@ -3,37 +3,39 @@ package gestores;
 import basededatos.ConexionBBDD;
 import plantillas.Personaje;
 
+import java.sql.Array;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /**
  * GestorPersonajes.
- * Procesa las transacciones de los avatares del juego en hilos independientes.
- * Encapsula la creación, carga y persistencia de las coordenadas y atributos estéticos 
- * de cada entidad interactuando con el pool de conexiones de PostgreSQL.
+ * Procesa las transacciones de los avatares interactuando con el pool de 
+ * conexiones de PostgreSQL. Encapsula la creación, carga y eliminación
+ * procesando estadísticas, coordenadas, cosméticos y la lista de rasgos del jugador.
  */
 public class GestorPersonajes {
 
     /**
      * crearPersonaje
      * Método genérico asíncrono que inserta un nuevo avatar en la base de datos.
-     * Le asigna las estadísticas base (Nivel 1), las coordenadas iniciales y 
-     * todos los atributos cosméticos elegidos en la interfaz. 
-     * Devuelve una promesa booleana indicando el éxito.
+     * Le asigna las estadísticas base (Nivel 1), las coordenadas iniciales, 
+     * todos los atributos cosméticos elegidos en la interfaz y convierte
+     * la lista de rasgos de Java en un Array de texto para PostgreSQL.
      */
     public static CompletableFuture<Boolean> crearPersonaje(int jugadorId, String nombrePersonaje,
             int genero, int cuerpo, int pelo, int formaOjos, float altura, 
-            float musculatura, float edad, String colorPiel, String colorOjos) {
+            float musculatura, float edad, String colorPiel, String colorOjos, List<String> rasgos) {
                 
         return CompletableFuture.supplyAsync(() -> {
             String sql = "INSERT INTO personajes (jugador_id, nombre, nivel, pos_x, pos_y, pos_z, " +
-                         "genero, cuerpo, pelo, forma_ojos, altura, musculatura, edad, color_piel, color_ojos) " +
-                         "VALUES (?, ?, 1, 0.0, 0.0, 0.0, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                         "genero, cuerpo, pelo, forma_ojos, altura, musculatura, edad, color_piel, color_ojos, rasgos) " +
+                         "VALUES (?, ?, 1, 0.0, 0.0, 0.0, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try (Connection conn = ConexionBBDD.obtenerConexion();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -50,6 +52,10 @@ public class GestorPersonajes {
                 pstmt.setString(10, colorPiel);
                 pstmt.setString(11, colorOjos);
                 
+                // Transforma la lista Java (List<String>) en un Array SQL (text[])
+                Array arrayRasgos = conn.createArrayOf("text", rasgos.toArray());
+                pstmt.setArray(12, arrayRasgos);
+                
                 pstmt.executeUpdate();
                 return true;
 
@@ -64,8 +70,8 @@ public class GestorPersonajes {
      * cargarPersonajesDeJugador
      * Método genérico asíncrono que recopila el listado completo de avatares 
      * vinculados a la cuenta de un usuario recién autenticado.
-     * Transforma las filas SQL en objetos Java instanciables (Plantillas) 
-     * inyectando ahora también la configuración estética.
+     * Lee la columna de tipo Array de PostgreSQL y la transforma de vuelta 
+     * en una lista de Java para instanciar correctamente la clase Personaje.
      */
     public static CompletableFuture<List<Personaje>> cargarPersonajesDeJugador(int jugadorId) {
         return CompletableFuture.supplyAsync(() -> {
@@ -79,6 +85,14 @@ public class GestorPersonajes {
                 ResultSet rs = pstmt.executeQuery();
 
                 while (rs.next()) {
+                    List<String> listaRasgos = new ArrayList<>();
+                    Array arraySQL = rs.getArray("rasgos");
+                    
+                    if (arraySQL != null) {
+                        String[] rasgosArr = (String[]) arraySQL.getArray();
+                        listaRasgos = Arrays.asList(rasgosArr);
+                    }
+
                     listaPersonajes.add(new Personaje(
                         rs.getInt("id"), 
                         rs.getInt("jugador_id"), 
@@ -95,7 +109,8 @@ public class GestorPersonajes {
                         rs.getFloat("musculatura"),
                         rs.getFloat("edad"),
                         rs.getString("color_piel"),
-                        rs.getString("color_ojos")
+                        rs.getString("color_ojos"),
+                        listaRasgos
                     ));
                 }
             } catch (SQLException e) {
@@ -148,6 +163,14 @@ public class GestorPersonajes {
                 
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
+                        List<String> listaRasgos = new ArrayList<>();
+                        Array arraySQL = rs.getArray("rasgos");
+                        
+                        if (arraySQL != null) {
+                            String[] rasgosArr = (String[]) arraySQL.getArray();
+                            listaRasgos = Arrays.asList(rasgosArr);
+                        }
+                        
                         return new Personaje(
                             rs.getInt("id"), 
                             rs.getInt("jugador_id"), 
@@ -164,7 +187,8 @@ public class GestorPersonajes {
                             rs.getFloat("musculatura"),
                             rs.getFloat("edad"),
                             rs.getString("color_piel"),
-                            rs.getString("color_ojos")
+                            rs.getString("color_ojos"),
+                            listaRasgos
                         );
                     }
                 }

@@ -16,6 +16,8 @@ import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -240,11 +242,10 @@ public class ServidorPrincipal {
         });
     }
 
-   /**
+    /**
      * manejarCreacionPersonaje
      * Método interno para procesar la creación de un nuevo avatar en el mundo.
-     * Lee secuencialmente el nombre y los 9 parámetros cosméticos enviados 
-     * por Godot. Delega la inserción a la base de datos de forma asíncrona.
+     * Lee secuencialmente el nombre, los 9 parámetros cosméticos enviados y la lista de rasgos.
      */
     private static void manejarCreacionPersonaje(KcpSession sesion, InetSocketAddress sender, PaqueteEntrada p) {
         try {
@@ -260,17 +261,24 @@ public class ServidorPrincipal {
             String colorPiel = p.leerString();
             String colorOjos = p.leerString();
             
+            // --- NUEVO: LECTURA DE RASGOS ---
+            int cantidadRasgos = p.leerInt();
+            List<String> rasgosElegidos = new ArrayList<>();
+            for (int i = 0; i < cantidadRasgos; i++) {
+                rasgosElegidos.add(p.leerString());
+            }
+            
             // 2. Identificamos al propietario
             JugadorServidor jugador = sesionesActivas.get(sender);
             
             if (jugador != null) {
                 int cuentaId = jugador.getIdCuenta(); 
                 
-                // 3. Enviamos a la Base de Datos todos los parámetros cosméticos
+                // 3. Enviamos a la Base de Datos todos los parámetros cosméticos y los rasgos
                 GestorPersonajes.crearPersonaje(cuentaId, nombrePersonaje, genero, cuerpo, pelo, 
-                                                formaOjos, altura, musculatura, edad, colorPiel, colorOjos)
+                                                formaOjos, altura, musculatura, edad, colorPiel, colorOjos, rasgosElegidos)
                     .thenAccept(exito -> {
-                        System.out.println("Creación de personaje '" + nombrePersonaje + "': " + (exito ? "EXITO" : "FALLO"));
+                        System.out.println("Creación de personaje '" + nombrePersonaje + "' con " + cantidadRasgos + " rasgos: " + (exito ? "EXITO" : "FALLO"));
                         
                         // 4. Respondemos a Godot
                         PaqueteSalida ps = new PaqueteSalida();
@@ -288,7 +296,7 @@ public class ServidorPrincipal {
     /**
      * manejarPeticionPersonajes
      * Método interno encargado de procesar la solicitud de la lista de personajes.
-     * Empaqueta el nombre, estadísticas y los 9 atributos estéticos en estricto orden Big Endian.
+     * Empaqueta el nombre, estadísticas, los 9 atributos estéticos y la lista de rasgos.
      */
     private static void manejarPeticionPersonajes(KcpSession sesion, InetSocketAddress sender, PaqueteEntrada p) {
         System.out.println("Petición recibida: El cliente " + sender + " solicita su lista de personajes.");
@@ -302,7 +310,7 @@ public class ServidorPrincipal {
                 
                 ps.escribirInt(lista.size());
                 
-                // Iteramos y serializamos todos los datos, incluyendo la estética
+                // Iteramos y serializamos todos los datos, incluyendo la estética y rasgos
                 for (plantillas.Personaje pers : lista) {
                     // Datos Fundamentales
                     ps.escribirInt(pers.getId());             
@@ -323,6 +331,18 @@ public class ServidorPrincipal {
                     ps.escribirFloat(pers.getEdad());
                     ps.escribirString(pers.getColorPiel());
                     ps.escribirString(pers.getColorOjos());
+                    
+                    // --- NUEVO: EMPAQUETADO DE RASGOS ---
+                    List<String> rasgos = pers.getRasgos();
+                    // Protegemos contra nulos por si acaso
+                    if (rasgos == null) {
+                        ps.escribirInt(0);
+                    } else {
+                        ps.escribirInt(rasgos.size());
+                        for (String rasgo : rasgos) {
+                            ps.escribirString(rasgo);
+                        }
+                    }
                 }
                 
                 enviar(sesion, ps);
@@ -331,7 +351,7 @@ public class ServidorPrincipal {
         }
     }
 
-   /**
+    /**
      * manejarSeleccionPersonaje
      * Recibe el identificador único del avatar elegido por el cliente.
      */

@@ -61,7 +61,9 @@ func _ready():
 """
 _cargar_lista_desde_servidor
 Busca el ItemList de forma segura por toda la escena, lo limpia 
-y añade los personajes recibidos guardando su ID real como metadatos.
+y añade los personajes recibidos. 
+IMPORTANTE: Guarda el diccionario completo del personaje (p) como metadato, 
+para que el espejo 3D tenga acceso a todos los atributos estéticos posteriormente.
 """
 func _cargar_lista_desde_servidor(lista_personajes: Array):
 	var lista_ui = find_child("ListaPersonajes", true, false)
@@ -75,7 +77,9 @@ func _cargar_lista_desde_servidor(lista_personajes: Array):
 	for p in lista_personajes:
 		var texto_item = p["nombre"] + " (Nivel " + str(p["nivel"]) + ")"
 		var indice = lista_ui.add_item(texto_item)
-		lista_ui.set_item_metadata(indice, p["id"])
+		
+		# CORRECCIÓN: Guardamos todo el objeto/diccionario, no solo su ID.
+		lista_ui.set_item_metadata(indice, p) 
 		print("Personaje añadido a la UI con éxito: ", texto_item)
 
 """
@@ -106,13 +110,14 @@ func _actualizar_espejo_3d(datos_completos: Dictionary):
 
 """
 _on_lista_personajes_item_selected
-Reemplaza la función antigua. Pasa el diccionario completo de red al espejo 3D.
+Gestión del evento de selección visual.
+Extrae el diccionario completo oculto como metadato en la lista, actualiza el ID 
+del personaje para la red y le pasa el paquete completo al espejo tridimensional.
 """
 func _on_lista_personajes_item_selected(index: int):
 	var lista_ui = find_child("ListaPersonajes", true, false)
 	if lista_ui:
-		# Aquí debes asegurarte de que _cargar_lista_desde_servidor 
-		# haya guardado todo el Diccionario 'p' en el metadata, no solo p["id"]
+		# Ahora extraemos el diccionario completo que guardamos previamente
 		var datos = lista_ui.get_item_metadata(index)
 		personaje_seleccionado = datos["id"]
 		

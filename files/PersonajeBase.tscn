@@ -1,0 +1,73 @@
+[gd_scene load_steps=3 format=3 uid="uid://personaje_base"]
+
+; ============================================================
+; PersonajeBase.tscn — Reino Pixel MMO
+; ============================================================
+; Esta escena define la JERARQUÍA de nodos del avatar.
+; No incluye mallas reales (esas son tus .tres de Blender).
+; Úsala como escena instanciada tanto en el Espejo3D de 
+; CreacionPersonaje como en el mundo del juego.
+;
+; Para instanciarla en otra escena:
+;   var personaje = preload("res://Personajes/PersonajeBase.tscn").instantiate()
+;   add_child(personaje)
+;   personaje.aplicar_personalizacion(datos)
+; ============================================================
+
+[ext_resource type="Script" path="res://Personajes/PersonajeBase.gd" id="1"]
+
+; Esqueleto (deberás importar el tuyo desde Blender como .glb/.gltf)
+; Los nodos hijos MeshInstance3D deben estar DENTRO del Skeleton3D
+; para que la animación de huesos funcione correctamente.
+
+[node name="PersonajeBase" type="Node3D"]
+script = ExtResource("1")
+
+[node name="Esqueleto" type="Skeleton3D" parent="."]
+; ── Aquí va tu esqueleto importado de Blender ──
+; Al importar el .glb, Godot generará este nodo automáticamente.
+; Renómbralo a "Esqueleto" para que coincida con los @onready del script.
+
+[node name="CuerpoBase" type="MeshInstance3D" parent="Esqueleto"]
+; Malla principal del cuerpo con BlendShapes exportados desde Blender:
+;   Shape Key 0 → Musculatura
+;   Shape Key 1 → Grasa  
+;   Shape Key 2 → Edad
+;   Shape Key 3 → Femenino
+;   Shape Key 4 → Cuerpo_Alt
+; mesh = <tu CuerpoBase_M.tres>
+
+[node name="Slot_Pelo" type="MeshInstance3D" parent="Esqueleto"]
+; Malla intercambiable de pelo. Vacía por defecto, se carga por código.
+; Hueso de anclaje recomendado: "Head"
+
+[node name="Slot_Cejas" type="MeshInstance3D" parent="Esqueleto"]
+; Malla de cejas. Color controlado por material override.
+
+[node name="Slot_Ojos" type="MeshInstance3D" parent="Esqueleto"]
+; Malla de ojos (globo ocular o lente). Color cambia con el selector de color.
+
+[node name="Slot_Ropa_Torso" type="MeshInstance3D" parent="Esqueleto"]
+; Ropa del tronco superior. Índice 0 = ropa base de aldeano.
+
+[node name="Slot_Ropa_Piernas" type="MeshInstance3D" parent="Esqueleto"]
+; Ropa de cintura para abajo.
+
+[node name="Slot_Ropa_Pies" type="MeshInstance3D" parent="Esqueleto"]
+; Calzado. Índice 0 = botas básicas.
+
+[node name="Slot_Barba" type="MeshInstance3D" parent="Esqueleto"]
+; Solo visible en género masculino (genero == 0). 
+; visible = false por defecto, el script lo gestiona.
+visible = false
+
+[node name="Slot_Accesorio" type="MeshInstance3D" parent="Esqueleto"]
+; Slot libre para sombreros, capas, cinturones, etc.
+visible = false
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+; Importado automáticamente con el .glb de Blender.
+; Animaciones recomendadas: "idle", "walk", "run", "attack", "emote_saludo"
+
+; ── CollisionShape (actívala solo en escenas de juego, no en el espejo) ──
+; [node name="CollisionShape3D" type="CollisionShape3D" parent="."]

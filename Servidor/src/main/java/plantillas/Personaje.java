@@ -2,12 +2,13 @@ package plantillas;
 
 import red.Opcodes;
 import red.PaqueteSalida;
+import java.util.List;
 
 /**
  * Entidad Personaje.
  * Representa el estado en memoria RAM de un avatar dentro del mundo del juego.
- * Actúa como la fuente de verdad espacial, de estadísticas y ahora de configuración 
- * estética en el servidor, procesando actualizaciones sin consultar la BBDD continuamente.
+ * Actúa como la fuente de verdad espacial, de estadísticas, estética y ahora de
+ * rasgos (traits), procesando actualizaciones sin consultar la BBDD continuamente.
  */
 public class Personaje {
 
@@ -32,15 +33,19 @@ public class Personaje {
     private float edad;
     private String colorPiel;
     private String colorOjos;
+    
+    // --- Atributos de Lore/Jugabilidad ---
+    // Almacena los IDs de los rasgos (ej: ["fuerte", "agil", "miope"])
+    private List<String> rasgos;
 
     /**
      * Constructor principal de la entidad.
-     * Instancia los datos fundamentales del personaje junto con todos sus
-     * modificadores cosméticos tras ser recuperados de la base de datos.
+     * Instancia todos los datos fundamentales, estéticos y la lista de rasgos
+     * tras ser recuperados de la base de datos.
      */
     public Personaje(int id, int jugadorId, String nombre, int nivel, float posX, float posY, float posZ,
                      int genero, int cuerpo, int pelo, int formaOjos, float altura, float musculatura, 
-                     float edad, String colorPiel, String colorOjos) {
+                     float edad, String colorPiel, String colorOjos, List<String> rasgos) {
                          
         this.id = id;
         this.jugadorId = jugadorId;
@@ -50,7 +55,6 @@ public class Personaje {
         this.posY = posY;
         this.posZ = posZ;
         
-        // Inicialización de la estética
         this.genero = genero;
         this.cuerpo = cuerpo;
         this.pelo = pelo;
@@ -60,13 +64,13 @@ public class Personaje {
         this.edad = edad;
         this.colorPiel = colorPiel;
         this.colorOjos = colorOjos;
+        this.rasgos = rasgos;
     }
 
     /**
      * actualizarPosicion
-     * Método interno modificado en cada tick de red.
      * Sobrescribe las coordenadas espaciales actuales del personaje en la memoria RAM
-     * cuando el servidor recibe un paquete de movimiento validado desde el cliente KCP.
+     * cuando el servidor recibe un paquete de movimiento validado.
      */
     public void actualizarPosicion(float nuevaX, float nuevaY, float nuevaZ) {
         this.posX = nuevaX;
@@ -76,10 +80,8 @@ public class Personaje {
 
     /**
      * empaquetarPosicionBinaria
-     * Método genérico de serialización ultrarrápida.
-     * Construye un paquete de red inyectando el Opcode correspondiente, el ID 
-     * único del personaje y sus tres coordenadas espaciales en un flujo de bytes puros,
-     * dejándolo listo para su retransmisión al resto de jugadores del mapa.
+     * Construye un paquete de red con el Opcode, el ID único y las coordenadas
+     * espaciales, dejándolo listo para su retransmisión al resto de jugadores.
      */
     public byte[] empaquetarPosicionBinaria() {
         PaqueteSalida paquete = new PaqueteSalida();
@@ -91,11 +93,10 @@ public class Personaje {
         return paquete.obtenerBytes();
     }
 
-    /**
-     * GETTERS Y SETTERS
-     * Métodos de acceso estándar para la lectura y escritura de atributos 
-     * encapsulados desde otros gestores del servidor.
-     */
+    // ==========================================
+    //          GETTERS Y SETTERS BÁSICOS
+    // ==========================================
+    
     public int getId() { return id; }
     public int getJugadorId() { return jugadorId; }
     public String getNombre() { return nombre; }
@@ -107,7 +108,10 @@ public class Personaje {
     public float getPosY() { return posY; }
     public float getPosZ() { return posZ; }
     
-    // Getters Estéticos
+    // ==========================================
+    //          GETTERS ESTÉTICOS Y RASGOS
+    // ==========================================
+    
     public int getGenero() { return genero; }
     public int getCuerpo() { return cuerpo; }
     public int getPelo() { return pelo; }
@@ -117,4 +121,6 @@ public class Personaje {
     public float getEdad() { return edad; }
     public String getColorPiel() { return colorPiel; }
     public String getColorOjos() { return colorOjos; }
+    
+    public List<String> getRasgos() { return rasgos; }
 }
