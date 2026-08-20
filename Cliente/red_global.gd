@@ -35,7 +35,7 @@ const S_ACTUALIZAR_POSICION : int = 16
 var kcp_client = null
 var ip_servidor := "127.0.0.1" 
 var puerto_servidor := 8080
-var conv_id := 12345 # Identificador de conversación único para esta sesión KCP
+var conv_id := 1 # Identificador de conversación único para esta sesión KCP
 
 """
 _ready
@@ -161,8 +161,8 @@ Transforma una cadena de texto en bytes UTF-8 y le antepone su longitud (16 bits
 """
 func escribir_string_en_buffer(buffer: StreamPeerBuffer, texto: String):
 	var bytes_texto = texto.to_utf8_buffer()
-	buffer.put_16(bytes_texto.size())
-	buffer.put_data(bytes_texto)
+	buffer.put_16(bytes_texto.size()) # Escribe 2 bytes para la longitud exacta
+	buffer.put_data(bytes_texto)     # Escribe los bytes del texto sin nulos añadidos
 
 """
 _leer_string_de_buffer
@@ -179,4 +179,7 @@ de la librería KCP nativa compilada en C++.
 """
 func enviar_buffer(buffer: StreamPeerBuffer):
 	if kcp_client and kcp_client.is_connected_to_host():
-		kcp_client.send_packet(buffer.data_array)
+		# Nos aseguramos de rebobinar el buffer al inicio absoluto antes de extraer los datos
+		buffer.seek(0)
+		var datos_limpios = buffer.get_data(buffer.get_size())[1] # Extrae todo el array desde el inicio real
+		kcp_client.send_packet(datos_limpios)

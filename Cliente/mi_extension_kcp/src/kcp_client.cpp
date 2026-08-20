@@ -2,9 +2,10 @@
 
 // Includes oficiales y correctos de godot-cpp para Godot 4
 #include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/defs.hpp> // Aquí es donde vive GDE_EXPORT realmente
+#include <godot_cpp/core/defs.hpp> 
 #include <godot_cpp/godot.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
+#include <godot_cpp/classes/time.hpp> // NUEVO: Obligatorio para precisión de reloj KCP
 
 #include <cstring>
 
@@ -25,6 +26,7 @@ using namespace godot;
 // ---------------------------------------------------------------------
 
 /**
+ * _bind_methods
  * Método genérico encargado de registrar en el motor de Godot todos los métodos,
  * propiedades y señales accesibles desde GDScript para la clase KCPClient.
  */
@@ -40,8 +42,9 @@ void KCPClient::_bind_methods() {
 }
 
 /**
- * Constructor interno de la clase. Inicializa las estructuras de red 
- * nativas del sistema operativo (Winsock en Windows) y prepara los punteros a nulo.
+ * KCPClient (Constructor)
+ * Inicializa las estructuras de red nativas del sistema operativo (Winsock en Windows) 
+ * y prepara los punteros a nulo para un arranque limpio.
  */
 KCPClient::KCPClient() {
 #ifdef _WIN32
@@ -52,11 +55,14 @@ KCPClient::KCPClient() {
     sockfd = -1;
 #endif
     memset(&server_addr, 0, sizeof(server_addr));
+    connected = false;
+    kcp = nullptr;
 }
 
 /**
- * Destructor interno de la clase. Se asegura de cerrar cualquier conexión activa
- * y liberar los recursos del sistema operativo asignados al socket.
+ * ~KCPClient (Destructor)
+ * Se asegura de cerrar cualquier conexión activa y liberar los recursos 
+ * del sistema operativo asignados al socket al destruir el nodo.
  */
 KCPClient::~KCPClient() {
     disconnect_from_host();
@@ -70,8 +76,10 @@ KCPClient::~KCPClient() {
 // ---------------------------------------------------------------------
 
 /**
+ * connect_to_host
  * Método genérico para establecer la conexión UDP/KCP con el servidor remoto.
- * Configura el socket en modo no bloqueante, resuelve la IP y arranca la instancia de KCP.
+ * Configura el socket en modo no bloqueante, enlaza el protocolo KCP en Fast Mode 
+ * y ajusta la MTU exactamente a los estándares del servidor Java.
  */
 bool KCPClient::connect_to_host(const String &p_host, int p_port, int p_conv) {
     disconnect_from_host();
@@ -82,8 +90,8 @@ bool KCPClient::connect_to_host(const String &p_host, int p_port, int p_conv) {
         UtilityFunctions::push_error("KCPClient: no se pudo crear el socket UDP.");
         return false;
     }
-    u_long mode = 1; // non-blocking
-    ioctlsocket(sockfd, FIONBIO, &mode);
+    u_long mode = 1; 
+    ioctlsocket(sockfd, FIONBIO, &mode); // Modo No-Bloqueante
 #else
     if (sockfd < 0) {
         UtilityFunctions::push_error("KCPClient: no se pudo crear el socket UDP.");
@@ -119,17 +127,21 @@ bool KCPClient::connect_to_host(const String &p_host, int p_port, int p_conv) {
     }
     kcp->output = &KCPClient::udp_output;
 
+    // --- CONFIGURACIÓN ESTRICTA EMPAREJADA CON JAVA (FAST MODE) ---
     ikcp_nodelay(kcp, 1, 10, 2, 1);
-    ikcp_wndsize(kcp, 128, 128);
-    ikcp_setmtu(kcp, 512);
+    ikcp_wndsize(kcp, 256, 256); // Emparejado con el servidor Netty
+    ikcp_setmtu(kcp, 1400);      // Emparejado con el servidor Netty
+    // --------------------------------------------------------------
 
     connected = true;
+    UtilityFunctions::print("KCPClient: C++ Enlazado a ", p_host, ":", p_port, " | CONV_ID: ", conv_id);
     return true;
 }
 
 /**
+ * disconnect_from_host
  * Método interno encargado de desconectar del servidor, liberar la instancia 
- * de la máquina de estados KCP y cerrar de forma segura el descriptor del socket.
+ * de la máquina de estados KCP y cerrar el socket UDP.
  */
 void KCPClient::disconnect_from_host() {
     if (kcp) {
@@ -150,9 +162,6 @@ void KCPClient::disconnect_from_host() {
     connected = false;
 }
 
-/**
- * Devuelve un valor booleano indicando si el cliente se encuentra conectado activamente.
- */
 bool KCPClient::is_connected_to_host() const {
     return connected;
 }
@@ -162,14 +171,14 @@ bool KCPClient::is_connected_to_host() const {
 // ---------------------------------------------------------------------
 
 /**
+ * udp_output
  * Método interno de callback requerido por KCP para enviar los paquetes binarios 
  * procesados directamente a través del socket UDP subyacente.
  */
 int KCPClient::udp_output(const char *buf, int len, ikcpcb *kcp, void *user) {
     KCPClient *self = (KCPClient *)user;
-    if (!self || !self->connected) {
-        return 0;
-    }
+    if (!self || !self->connected) return 0;
+    
 #ifdef _WIN32
     send(self->sockfd, buf, len, 0);
 #else
@@ -179,14 +188,14 @@ int KCPClient::udp_output(const char *buf, int len, ikcpcb *kcp, void *user) {
 }
 
 /**
- * Método genérico expuesto a GDScript para encolar el envío de un flujo de bytes 
- * a través del protocolo KCP.
+ * send_packet
+ * Método genérico expuesto a GDScript para encolar el envío de un flujo de bytes.
+ * Cuenta con un seguro anti-crasheo que evita el envío de vectores vacíos.
  */
 void KCPClient::send_packet(const PackedByteArray &p_data) {
-    if (!connected || !kcp) {
-        UtilityFunctions::push_warning("KCPClient: send_packet llamado sin conexión activa.");
-        return;
-    }
+    if (!connected || !kcp) return;
+    if (p_data.size() == 0) return; // SEGURO: Evita que KCP colapse por arrays vacíos
+    
     ikcp_send(kcp, (const char *)p_data.ptr(), p_data.size());
 }
 
@@ -195,37 +204,32 @@ void KCPClient::send_packet(const PackedByteArray &p_data) {
 // ---------------------------------------------------------------------
 
 /**
- * Método interno que lee de forma no bloqueante los paquetes UDP que llegan del servidor 
- * y los inyecta en la máquina de recepción de KCP mediante `ikcp_input`.
+ * poll_socket
+ * Método interno que lee de forma no bloqueante los paquetes UDP en crudo 
+ * y los inyecta en el ensamblador KCP.
  */
 void KCPClient::poll_socket() {
-    if (!connected) {
-        return;
-    }
+    if (!connected) return;
 
     char buf[2048];
     while (true) {
 #ifdef _WIN32
         int n = recv(sockfd, buf, sizeof(buf), 0);
-        if (n == SOCKET_ERROR) {
-            break; 
-        }
+        if (n == SOCKET_ERROR) break; 
 #else
         ssize_t n = ::recv(sockfd, buf, sizeof(buf), 0);
-        if (n < 0) {
-            break; 
-        }
+        if (n < 0) break; 
 #endif
-        if (n <= 0) {
-            break;
-        }
+        if (n <= 0) break;
+        
         ikcp_input(kcp, buf, (long)n);
     }
 }
 
 /**
- * Método interno que extrae de la cola de KCP los paquetes ya ensamblados 
- * y emite la señal correspondiente hacia GDScript para que el juego los procese.
+ * drain_kcp_recv
+ * Método interno que extrae de la cola de KCP los paquetes ya verificados, 
+ * sin fragmentar y en orden, emitiéndolos hacia GDScript.
  */
 void KCPClient::drain_kcp_recv() {
     char buf[65536];
@@ -239,49 +243,33 @@ void KCPClient::drain_kcp_recv() {
 }
 
 /**
- * Método genérico ejecutado por fotograma desde Godot. Actualiza la recepción de sockets, 
- * avanza el reloj interno de KCP y procesa los reenvíos pendientes.
+ * update
+ * Método genérico ejecutado por fotograma (_process) desde Godot. 
+ * Alimentado mediante el reloj global estricto del motor para garantizar un ping exacto.
  */
 void KCPClient::update(double p_delta) {
-    if (!connected || !kcp) {
-        return;
-    }
+    if (!connected || !kcp) return;
 
     poll_socket();
 
-    static uint32_t clock_ms = 0;
-    clock_ms += (uint32_t)(p_delta * 1000.0);
-    ikcp_update(kcp, clock_ms);
+    // SOLUCIÓN AL BUG: Extraemos los milisegundos reales del reloj del motor, 
+    // en lugar de depender de una variable estática vulnerable a tirones de FPS.
+    uint32_t current_ms = Time::get_singleton()->get_ticks_msec();
+    ikcp_update(kcp, current_ms);
 
     drain_kcp_recv();
 }
 
 // ---------------------------------------------------------------------
-// Inicialización y Registro de la GDExtension para Godot 4
+// Inicialización y Registro
 // ---------------------------------------------------------------------
-
-/**
- * Método interno de inicialización del módulo de la librería. 
- * Registra formalmente la clase KCPClient en la base de datos de clases del motor.
- */
 void initialize_kcp_types(ModuleInitializationLevel p_level) {
-    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-        GDREGISTER_CLASS(KCPClient);
-    }
+    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) GDREGISTER_CLASS(KCPClient);
 }
 
-/**
- * Método interno de limpieza del módulo cuando Godot descarga la librería.
- */
-void uninitialize_kcp_types(ModuleInitializationLevel p_level) {
-    if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-        // Limpieza de tipos si fuese necesario
-    }
-}
+void uninitialize_kcp_types(ModuleInitializationLevel p_level) {}
 
-// Punto de entrada principal enlazado con el archivo .gdextension (entry_symbol = "gde_init")
 extern "C" {
-// Solo usamos GDE_EXPORT (sin inventos) para exportar la función limpia al compilador de Windows
 GDExtensionBool GDE_EXPORT gde_init(
     GDExtensionInterfaceGetProcAddress p_get_proc_address,
     GDExtensionClassLibraryPtr p_library,

@@ -1,42 +1,50 @@
 package red;
 
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 
 /**
  * Clase PaqueteEntrada.
- * Envoltorio para ByteBuffer que facilita la lectura secuencial de los 
- * paquetes binarios recibidos desde los clientes a través de UDP/KCP.
- * Mantiene un cursor interno que avanza automáticamente a medida que se extraen 
- * datos, garantizando una lectura estricta en formato Big Endian.
+ * Envoltorio robusto para ByteBuffer que facilita la lectura secuencial de los 
+ * paquetes binarios recibidos desde UDP asegurando la alineación Big Endian.
  */
 public class PaqueteEntrada {
     
     private ByteBuffer buffer;
 
     /**
-     * Constructor principal.
-     * Envuelve el array de bytes crudos recibido desde la red nativa en un buffer
-     * de lectura gestionado por Java NIO, listo para su extracción secuencial.
+     * PaqueteEntrada
+     * Método constructor genérico. Recibe el array de bytes crudos de la red,
+     * lo envuelve en un ByteBuffer de Java NIO, fuerza el formato Big Endian
+     * y sitúa el cursor estrictamente al inicio (posición 0).
      */
     public PaqueteEntrada(byte[] datos) {
         this.buffer = ByteBuffer.wrap(datos);
+        this.buffer.order(ByteOrder.BIG_ENDIAN);
+        this.buffer.position(0);
     }
 
     /**
      * leerByte
-     * Método genérico que extrae el siguiente byte (8 bits) del flujo.
-     * Generalmente el primer byte leído en el servidor siempre es el Opcode
-     * que define la acción a realizar.
+     * Método interno para extraer el siguiente byte (8 bits) del flujo de datos.
+     * Utilizado principalmente para leer el Opcode inicial del paquete.
      */
     public byte leerByte() {
         return buffer.get();
     }
 
     /**
+     * leerShort
+     * Método interno para extraer un número entero corto (16 bits) del búfer.
+     */
+    public short leerShort() {
+        return buffer.getShort();
+    }
+
+    /**
      * leerInt
-     * Método genérico que extrae un número entero (32 bits) del flujo.
-     * Utilizado para procesar identificadores únicos, variables de estado o cantidades.
+     * Método interno para extraer un número entero de 32 bits del flujo.
      */
     public int leerInt() {
         return buffer.getInt();
@@ -44,24 +52,45 @@ public class PaqueteEntrada {
 
     /**
      * leerFloat
-     * Método genérico que extrae un número decimal (32 bits).
-     * Típicamente usado para descifrar las coordenadas espaciales (X, Y, Z) enviadas
-     * por el motor físico del cliente a alta velocidad.
+     * Método interno para extraer un número decimal de 32 bits.
      */
     public float leerFloat() {
         return buffer.getFloat();
     }
 
     /**
+     * getBuffer
+     * Método genérico de acceso que devuelve la instancia subyacente del ByteBuffer.
+     */
+    public ByteBuffer getBuffer() {
+        return buffer;
+    }
+
+    /**
      * leerString
-     * Método genérico que extrae una cadena de texto dinámica.
-     * Primero lee un entero corto (16 bits) para averiguar la longitud exacta del texto,
-     * y luego extrae esos bytes específicos para decodificarlos limpiamente como UTF-8.
+     * Método genérico interno encargado de extraer cadenas de texto dinámicas.
      */
     public String leerString() {
-        short longitud = buffer.getShort();
-        byte[] bytesTexto = new byte[longitud];
-        buffer.get(bytesTexto);
-        return new String(bytesTexto, StandardCharsets.UTF_8);
+        if (buffer.remaining() < 2) {
+            System.err.println("¡CRÍTICO! No quedan suficientes bytes para leer la longitud del string. Quedan: " + buffer.remaining());
+            return "";
+        }
+        
+        short longitudShort = buffer.getShort();
+        int longitud = Short.toUnsignedInt(longitudShort);
+        
+        System.out.println("DEBUG LEER STRING -> Longitud leída (short): " + longitudShort + " | Como entero: " + longitud + " | Bytes restantes: " + buffer.remaining());
+        
+        if (longitud <= 0 || longitud > buffer.remaining()) {
+            System.err.println("¡CRÍTICO! Longitud inválida o excede el buffer restante.");
+            return "";
+        }
+        
+        byte[] bytes = new byte[longitud];
+        buffer.get(bytes);
+        
+        String textoLeido = new String(bytes, StandardCharsets.UTF_8);
+        System.out.println("DEBUG LEER STRING -> Texto decodificado con éxito: [" + textoLeido + "]");
+        return textoLeido;
     }
 }

@@ -1,7 +1,6 @@
 [configuration]
 entry_symbol = "gde_init"
-compatibility_minimum = "4.2"
+compatibility_minimum = "4.1"
 
 [libraries]
-windows.debug.x86_64 = "res://bin/libkcpclient.windows.template_release.x86_64.dll"
-windows.release.x86_64 = "res://bin/libkcpclient.windows.template_release.x86_64.dll"
+windows.debug.x86_64 = "res://bin/libkcpclient.windows.template_debug.x86_64.dll"

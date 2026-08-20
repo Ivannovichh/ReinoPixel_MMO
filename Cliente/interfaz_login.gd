@@ -52,6 +52,10 @@ func _al_pulsar_login():
 	var correo = input_login_correo.text.strip_edges()
 	var pass_text = input_login_pass.text
 	
+	# --- AÑADE ESTO PARA VER QUÉ ESTÁS ENVIANDO ---
+	print("Enviando correo desde UI: '", correo, "' | Contraseña: '", pass_text, "'")
+	# ---------------------------------------------
+	
 	if correo == "" or pass_text == "":
 		lbl_error_login.text = "Rellena el correo y la contraseña."
 		return
