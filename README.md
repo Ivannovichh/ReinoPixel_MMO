@@ -37,8 +37,8 @@ Su diseño ha sido iterado para separar de manera estricta la **Capa Cliente (Go
 El ecosistema utiliza un patrón de diseño **Cliente-Servidor Autoritativo** de alta velocidad. El cliente delega todo el procesamiento de red a una librería nativa compilada, mientras el servidor backend mantiene la autoridad sobre el estado del mundo.
 
 ```mermaid
- graph TD
-    subgraph Capa Cliente(Local)
+graph TD
+    subgraph Cliente ["Capa Cliente (Local)"]
         G[Godot Engine 4.x] 
         UI[GDScript / UI]
         CPP[GDExtension KCP C++]
@@ -47,18 +47,18 @@ El ecosistema utiliza un patrón de diseño **Cliente-Servidor Autoritativo** de
         G <-->|Punteros Nativos| CPP
     end
 
-    subgraph Capa Servidor Backend(Java Local)
+    subgraph Servidor ["Capa Servidor Backend (Java Local)"]
         JS[Servidor Java Core]
         KCP[Gestor KCP UDP]
         AUTH[Gestor Lógico]
         POOL[HikariCP Connection Pool]
     end
 
-    subgraph Capa de Datos(Local)
+    subgraph BaseDatos ["Capa de Datos (Local)"]
         DB[(PostgreSQL)]
     end
 
-    CPP <-->|UDP / KCP (Big Endian)| KCP
+    CPP <-->|UDP / KCP Big Endian| KCP
     KCP <--> JS
     JS <--> AUTH
     AUTH <-->|JDBC Optimizado| POOL
