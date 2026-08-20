@@ -4,7 +4,6 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.net.URI;
 
 /**
  * Clase ConexionBBDD.
@@ -18,47 +17,36 @@ public class ConexionBBDD {
 
     /**
      * Bloque estático de inicialización.
-     * Configura los parámetros de acceso a la base de datos y los límites 
-     * de la piscina de conexiones (HikariCP) al arrancar la máquina virtual de Java.
+     * Configura los parámetros de acceso a la base de datos local (localhost) 
+     * y los límites de la piscina de conexiones (HikariCP) al arrancar el servidor.
      */
     static {
         HikariConfig config = new HikariConfig();
         
         try {
-            String databaseUrl = System.getenv("DATABASE_URL");
+            // Configuración directa para PostgreSQL en entorno local (PGAdmin)
+            // Asegúrate de cambiar 'reinopixel_db' y la contraseña por los tuyos reales
+            config.setJdbcUrl("jdbc:postgresql://localhost:5432/reinopixel_db");
+            config.setUsername("postgres");
+            config.setPassword("ADMIN"); // <-- CAMBIA ESTO por tu contraseña de PGAdmin
             
-            if (databaseUrl != null && !databaseUrl.isEmpty()) {
-                URI dbUri = new URI(databaseUrl);
-                String username = dbUri.getUserInfo().split(":")[0];
-                String password = dbUri.getUserInfo().split(":")[1];
-                String jdbcUrl = "jdbc:postgresql://" + dbUri.getHost() + ":" + (dbUri.getPort() == -1 ? 5432 : dbUri.getPort()) + dbUri.getPath();
-                
-                config.setJdbcUrl(jdbcUrl);
-                config.setUsername(username);
-                config.setPassword(password);
-            } else {
-                String host = System.getenv("PGHOST");
-                String port = System.getenv("PGPORT");
-                String dbName = System.getenv("PGDATABASE");
-                
-                config.setJdbcUrl("jdbc:postgresql://" + host + ":" + (port == null ? "5432" : port) + "/" + (dbName == null ? "railway" : dbName));
-                config.setUsername(System.getenv("PGUSER"));
-                config.setPassword(System.getenv("PGPASSWORD"));
-            }
-
+            // Configuración del Pool de conexiones para MMORPG
             config.setMaximumPoolSize(20);
             config.setMinimumIdle(5);
             config.setIdleTimeout(30000);
             config.setConnectionTimeout(10000);
             
+            // Optimizaciones de caché para consultas recurrentes (Selects/Updates)
             config.addDataSourceProperty("cachePrepStmts", "true");
             config.addDataSourceProperty("prepStmtCacheSize", "250");
             config.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
 
             dataSource = new HikariDataSource(config);
+            System.out.println("BBDD: HikariCP conectado con éxito a PostgreSQL Local.");
             
         } catch (Exception e) {
-            System.err.println("FALLO CRITICO: No se pudo enlazar la BBDD.");
+            System.err.println("FALLO CRITICO: No se pudo enlazar la BBDD local.");
+            e.printStackTrace(); // Imprime el error exacto por si falla la contraseña
         }
     }
 
@@ -77,6 +65,7 @@ public class ConexionBBDD {
     public static void cerrarPool() {
         if (dataSource != null && !dataSource.isClosed()) {
             dataSource.close();
+            System.out.println("BBDD: Pool de conexiones cerrado limpiamente.");
         }
     }
 }

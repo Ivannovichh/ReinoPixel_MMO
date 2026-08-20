@@ -1,0 +1,34 @@
+#!/usr/bin/env python
+import os
+
+# Estructura de carpetas esperada:
+#   /godot-cpp        -> submódulo de godot-cpp
+#   /src/kcp_client.h
+#   /src/kcp_client.cpp
+#   /thirdparty/kcp/ikcp.h
+#   /thirdparty/kcp/ikcp.c
+
+env = SConscript("godot-cpp/SConstruct")
+
+# --- Directorios de include ---
+env.Append(CPPPATH=["src/", "thirdparty/kcp/"])
+
+# ikcp.c es C puro; lo compilamos como fuente C dentro del mismo build C++.
+env.Append(CFLAGS=["-w"])  # silencia warnings de la librería de terceros
+
+sources = Glob("src/*.cpp") + ["thirdparty/kcp/ikcp.c"]
+
+# --- Nombre de salida por plataforma ---
+if env["platform"] == "macos":
+    library_name = "libkcpclient.{}.{}.framework/libkcpclient.{}.{}".format(
+        env["platform"], env["target"], env["platform"], env["target"]
+    )
+else:
+    library_name = "libkcpclient{}{}".format(env["suffix"], env["SHLIBSUFFIX"])
+
+library = env.SharedLibrary(
+    target="demo/bin/{}".format(library_name),
+    source=sources,
+)
+
+Default(library)

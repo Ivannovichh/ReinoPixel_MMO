@@ -2,16 +2,19 @@ extends Node
 
 """
 RedGlobal
-Singleton (Autoload) encargado de mantener la conexión WebSocket viva a través de todas 
-las escenas del juego. Centraliza el enrutamiento y la conversión de variables a 
-paquetes de binario puro (bytes) usando el estándar Big Endian.
+Singleton (Autoload) encargado de gestionar el cliente de red nativo (KCPClient). 
+Centraliza el enrutamiento, mantiene el latido UDP y convierte variables a 
+paquetes de binario puro (bytes) usando el estándar Big Endian para comunicarse 
+con el servidor Java.
 """
 
+# Señales de interfaz
 signal evento_login(exito: bool)
 signal evento_registro(exito: bool)
 signal evento_personajes_recibidos(lista: Array)
 signal evento_creacion_personaje(exito: bool)
 
+# Opcodes de salida (Godot -> Java)
 const C_LOGIN : int = 1
 const C_REGISTRO : int = 2
 const C_PEDIR_PERSONAJES : int = 3
@@ -19,6 +22,7 @@ const C_CREAR_PERSONAJE : int = 4
 const C_SELECCIONAR_PERSONAJE : int = 5
 const C_MOVER_PERSONAJE : int = 6
 
+# Opcodes de entrada (Java -> Godot)
 const S_LOGIN_OK : int = 10
 const S_LOGIN_ERROR : int = 11
 const S_REGISTRO_OK : int = 12
@@ -27,51 +31,81 @@ const S_LISTA_PERSONAJES : int = 14
 const S_CREAR_PERSONAJE_RES : int = 15
 const S_ACTUALIZAR_POSICION : int = 16
 
-var socket := WebSocketPeer.new()
-var url_servidor := "wss://reinopixelmmo-production.up.railway.app"
-#var url_servidor := "ws://127.0.0.1:8080"
-var estado_conexion := WebSocketPeer.STATE_CLOSED
+# Cliente KCP (GDExtension nativa compilada en C++)
+var kcp_client = null
+var ip_servidor := "127.0.0.1" 
+var puerto_servidor := 8080
+var conv_id := 12345 # Identificador de conversación único para esta sesión KCP
+
+"""
+_ready
+Método genérico de inicialización. Instancia el objeto KCPClient desde 
+la base de datos de Godot y conecta sus señales de recepción nativas a 
+los métodos de procesamiento locales de GDScript.
+"""
+func _ready():
+	if ClassDB.class_exists("KCPClient"):
+		kcp_client = ClassDB.instantiate("KCPClient")
+		# Conectamos la señal que emite C++ con nuestra función de lectura
+		kcp_client.connect("packet_received", Callable(self, "_on_packet_received"))
+		print("RedGlobal: KCPClient nativo instanciado correctamente.")
+	else:
+		print("ERROR CRÍTICO: La clase nativa KCPClient no fue encontrada en Godot.")
 
 """
 conectar_al_servidor
-Establece el túnel de comunicación principal con el backend si no existe uno previo.
+Establece el túnel UDP de comunicación principal con el backend si no existe 
+uno previo, arrancando la máquina de estados KCP.
 """
 func conectar_al_servidor():
-	if socket.get_ready_state() == WebSocketPeer.STATE_CLOSED:
-		socket.connect_to_url(url_servidor)
+	if kcp_client and not kcp_client.is_connected_to_host():
+		var exito = kcp_client.connect_to_host(ip_servidor, puerto_servidor, conv_id)
+		if exito:
+			print("RedGlobal: Conexión KCP iniciada hacia ", ip_servidor, ":", str(puerto_servidor))
+		else:
+			print("RedGlobal: Falló el intento de conexión KCP.")
 
 """
 desconectar_servidor
-Cierra la conexión activa de WebSocket limpiamente y reinicia el estado interno.
-Ideal para cuando el usuario decides cerrar sesión y volver a la pantalla de Login.
+Cierra la conexión activa limpiamente y libera el socket del sistema operativo.
+Ideal para cuando el usuario decide cerrar sesión y volver a la pantalla de Login.
 """
 func desconectar_servidor():
-	if estado_conexion != WebSocketPeer.STATE_CLOSED:
-		socket.close()
+	if kcp_client and kcp_client.is_connected_to_host():
+		kcp_client.disconnect_from_host()
+		print("RedGlobal: Desconectado del servidor.")
 
 """
 _process
-Mantiene el latido del socket activo. Captura el flujo de bytes entrante y 
-lo deriva al método de procesamiento sin congelar el hilo principal de Godot.
+Mantiene el latido del cliente KCP. Llama al método C++ encargado de despachar 
+paquetes y enviar los ACKs de confirmación correspondientes.
 """
-func _process(_delta: float):
-	socket.poll()
-	estado_conexion = socket.get_ready_state()
-	
-	if estado_conexion == WebSocketPeer.STATE_OPEN:
-		while socket.get_available_packet_count() > 0:
-			var paquete_bytes = socket.get_packet()
-			_procesar_paquete_entrante(paquete_bytes)
+func _process(delta: float):
+	if kcp_client:
+		kcp_client.update(delta)
+
+"""
+_on_packet_received
+Método interno que actúa como puente. Se dispara automáticamente cuando el 
+cliente KCP ensambla un paquete UDP completo. Delega la lectura de bytes al procesador.
+"""
+func _on_packet_received(data: PackedByteArray):
+	_procesar_paquete_entrante(data)
 
 """
 _procesar_paquete_entrante
 Lee el identificador (Opcode) del flujo binario en Big Endian e invoca 
-las señales pertinentes para notificar a la interfaz de usuario.
+las señales pertinentes para notificar a la interfaz de usuario o actualizar entidades.
 """
 func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 	var buffer = StreamPeerBuffer.new()
 	buffer.big_endian = true
 	buffer.data_array = paquete_bytes
+	
+	# Seguridad: evitamos leer si el paquete llega vacío o corrupto
+	if buffer.get_size() < 1:
+		return
+		
 	var opcode = buffer.get_8()
 	
 	match opcode:
@@ -83,7 +117,7 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 			var exito = buffer.get_8() == 1 
 			evento_creacion_personaje.emit(exito)
 		S_LISTA_PERSONAJES:
-			print("¡Paquete S_LISTA_PERSONAJES recibido de Java!")
+			print("¡Paquete S_LISTA_PERSONAJES recibido por KCP!")
 			var cantidad = buffer.get_32() 
 			print("Cantidad de personajes declarada: ", cantidad)
 			var lista = []
@@ -140,8 +174,9 @@ func _leer_string_de_buffer(buffer: StreamPeerBuffer) -> String:
 
 """
 enviar_buffer
-Empuja la totalidad del flujo de datos a través de la red hacia el backend.
+Empuja la totalidad del flujo de datos de forma ultra-rápida a través 
+de la librería KCP nativa compilada en C++.
 """
 func enviar_buffer(buffer: StreamPeerBuffer):
-	if estado_conexion == WebSocketPeer.STATE_OPEN:
-		socket.put_packet(buffer.data_array)
+	if kcp_client and kcp_client.is_connected_to_host():
+		kcp_client.send_packet(buffer.data_array)
