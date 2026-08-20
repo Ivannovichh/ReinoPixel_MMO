@@ -150,11 +150,18 @@ public class ServidorPrincipal extends WebSocketServer {
      */
     private void manejarPeticionPersonajesBinario(WebSocket conn) {
         JugadorServidor jugador = sesionesActivas.get(conn);
+        
+        // CHIVATO 1: ¿Existe la sesión en RAM?
         if (jugador != null) {
+            System.out.println("[RED] Petición de personajes para cuenta ID: " + jugador.getIdCuenta());
+            
             GestorPersonajes.cargarPersonajesDeJugador(jugador.getIdCuenta()).thenAccept(lista -> {
+                // CHIVATO 2: ¿Cuántos personajes ha encontrado PostgreSQL?
+                System.out.println("[BBDD] Personajes encontrados en tabla: " + lista.size());
+                
                 PaqueteSalida respuesta = new PaqueteSalida();
                 respuesta.escribirByte(Opcodes.S_LISTA_PERSONAJES);
-                respuesta.escribirInt(lista.size()); // Avisamos a Godot de cuántos avatares vienen
+                respuesta.escribirInt(lista.size()); 
                 
                 for (Personaje p : lista) {
                     respuesta.escribirInt(p.getId());
@@ -166,10 +173,13 @@ public class ServidorPrincipal extends WebSocketServer {
                     respuesta.escribirFloat(p.getPosZ());
                 }
                 conn.send(respuesta.obtenerBytes());
+                System.out.println("[RED] Paquete S_LISTA_PERSONAJES enviado a Godot.");
             });
+        } else {
+            System.err.println("[ERROR] ¡La conexión no tiene sesión activa (jugador es null)!");
         }
     }
-
+    
     /**
      * manejarCreacionPersonajeBinario
      * Extrae el nombre deseado del flujo binario, crea el personaje y devuelve 

@@ -81,11 +81,12 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 			var exito = buffer.get_8() == 1 
 			evento_creacion_personaje.emit(exito)
 		S_LISTA_PERSONAJES:
+			print("¡Paquete S_LISTA_PERSONAJES recibido de Java!")
 			var cantidad = buffer.get_32() 
+			print("Cantidad de personajes declarada: ", cantidad)
 			var lista = []
 			
 			for i in range(cantidad):
-				# Desempaquetamos los 7 atributos exactos en el orden enviado por Java
 				var p_id = buffer.get_32()
 				var p_jugador_id = buffer.get_32()
 				var p_nombre = _leer_string_de_buffer(buffer)
@@ -94,6 +95,7 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 				var p_y = buffer.get_float()
 				var p_z = buffer.get_float()
 				
+				print("Cargando personaje: ", p_nombre)
 				lista.append({
 					"id": p_id,
 					"jugador_id": p_jugador_id,
