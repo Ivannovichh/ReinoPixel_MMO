@@ -85,12 +85,17 @@ El desarrollo sigue un orden cronológico estructurado para garantizar la estabi
 * **[X]** Migración de la base de datos a PostgreSQL local para optimización de desarrollo.
 * **[X]** Implementación de HikariCP en Java para concurrencia masiva.
 
-### 🔴 FASE 2: El Núcleo del Servidor KCP (Próximos pasos)
-* **[ ] Implementación KCP en Java:** Reestructurar el *Server Core* para utilizar Netty (o similar) y habilitar la recepción/desencriptación de paquetes UDP enviados por Godot.
-* **[ ] Handshake y Autenticación:** Readaptar el sistema de Login/Registro para que responda a los nuevos Opcodes binarios (Big Endian).
-* **[ ] Entidades y Posicionamiento:** Creación de la tabla `personajes` y sincronización continua de coordenadas espaciales (X, Y, Z) a través de KCP.
+### 🟢 FASE 2: El Núcleo del Servidor KCP
+* **[X] Implementación KCP en Java:** Reestructurar el *Server Core* para utilizar Netty (o similar) y habilitar la recepción/desencriptación de paquetes UDP enviados por Godot.
+* **[X] Handshake y Autenticación:** Readaptar el sistema de Login/Registro para que responda a los nuevos Opcodes binarios (Big Endian).
+* **[X] Entidades y Posicionamiento:** Creación de la tabla `personajes` y sincronización continua de coordenadas espaciales (X, Y, Z) a través de KCP.
 
-### 🟣 FASE 3: La Expansión del Mundo
+### 🔴 FASE 3: El Núcleo del Servidor KCP (Próximos pasos)
+* **[ ] Persistencia de posiciones:** Implementar la lógica en la base de datos y guardar la posición del jugador en el mundo
+* **[ ] Perfeccionamiento de interfaces:** Terminar de desarrollar las interfaces, dejandolas funcionales al 100%.
+* **[ ] Menu de juego:** Creación del menú dentro de juego y lógica de tal.
+
+### 🟣 FASE 4: La Expansión del Mundo
 * **[ ] Colisiones y Autoridad del Servidor:** Validación de físicas y movimientos estrictamente en el backend.
 * **[ ] Objetos y Sistema de Inventario:** Persistencia de ítems recogidos y base de datos relacional de armamento.
 * **[ ] Mercado y Economía:** Implementación de divisas virtuales, validación de transacciones y *tradeo* seguro.
