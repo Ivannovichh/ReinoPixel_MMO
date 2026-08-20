@@ -29,6 +29,7 @@ const S_ACTUALIZAR_POSICION : int = 16
 
 var socket := WebSocketPeer.new()
 var url_servidor := "wss://reinopixelmmo-production.up.railway.app"
+#var url_servidor := "ws://127.0.0.1:8080"
 var estado_conexion := WebSocketPeer.STATE_CLOSED
 
 """
