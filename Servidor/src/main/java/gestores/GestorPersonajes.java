@@ -14,26 +14,42 @@ import java.util.concurrent.CompletableFuture;
 /**
  * GestorPersonajes.
  * Procesa las transacciones de los avatares del juego en hilos independientes.
- * Encapsula la creación, carga y persistencia de las coordenadas de cada entidad
- * interactuando con el pool de conexiones de PostgreSQL.
+ * Encapsula la creación, carga y persistencia de las coordenadas y atributos estéticos 
+ * de cada entidad interactuando con el pool de conexiones de PostgreSQL.
  */
 public class GestorPersonajes {
 
     /**
      * crearPersonaje
      * Método genérico asíncrono que inserta un nuevo avatar en la base de datos.
-     * Le asigna las estadísticas base (Nivel 1) y las coordenadas iniciales 
-     * de aparición (Spawn point). Devuelve una promesa booleana indicando el éxito.
+     * Le asigna las estadísticas base (Nivel 1), las coordenadas iniciales y 
+     * todos los atributos cosméticos elegidos en la interfaz. 
+     * Devuelve una promesa booleana indicando el éxito.
      */
-    public static CompletableFuture<Boolean> crearPersonaje(int jugadorId, String nombrePersonaje) {
+    public static CompletableFuture<Boolean> crearPersonaje(int jugadorId, String nombrePersonaje,
+            int genero, int cuerpo, int pelo, int formaOjos, float altura, 
+            float musculatura, float edad, String colorPiel, String colorOjos) {
+                
         return CompletableFuture.supplyAsync(() -> {
-            String sql = "INSERT INTO personajes (jugador_id, nombre, nivel, pos_x, pos_y, pos_z) VALUES (?, ?, 1, 0.0, 0.0, 0.0)";
+            String sql = "INSERT INTO personajes (jugador_id, nombre, nivel, pos_x, pos_y, pos_z, " +
+                         "genero, cuerpo, pelo, forma_ojos, altura, musculatura, edad, color_piel, color_ojos) " +
+                         "VALUES (?, ?, 1, 0.0, 0.0, 0.0, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
             try (Connection conn = ConexionBBDD.obtenerConexion();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
                 pstmt.setInt(1, jugadorId);
                 pstmt.setString(2, nombrePersonaje);
+                pstmt.setInt(3, genero);
+                pstmt.setInt(4, cuerpo);
+                pstmt.setInt(5, pelo);
+                pstmt.setInt(6, formaOjos);
+                pstmt.setFloat(7, altura);
+                pstmt.setFloat(8, musculatura);
+                pstmt.setFloat(9, edad);
+                pstmt.setString(10, colorPiel);
+                pstmt.setString(11, colorOjos);
+                
                 pstmt.executeUpdate();
                 return true;
 
@@ -49,7 +65,7 @@ public class GestorPersonajes {
      * Método genérico asíncrono que recopila el listado completo de avatares 
      * vinculados a la cuenta de un usuario recién autenticado.
      * Transforma las filas SQL en objetos Java instanciables (Plantillas) 
-     * listos para ser empaquetados en Big Endian y enviados al cliente.
+     * inyectando ahora también la configuración estética.
      */
     public static CompletableFuture<List<Personaje>> cargarPersonajesDeJugador(int jugadorId) {
         return CompletableFuture.supplyAsync(() -> {
@@ -70,12 +86,20 @@ public class GestorPersonajes {
                         rs.getInt("nivel"), 
                         rs.getFloat("pos_x"), 
                         rs.getFloat("pos_y"), 
-                        rs.getFloat("pos_z")
+                        rs.getFloat("pos_z"),
+                        rs.getInt("genero"),
+                        rs.getInt("cuerpo"),
+                        rs.getInt("pelo"),
+                        rs.getInt("forma_ojos"),
+                        rs.getFloat("altura"),
+                        rs.getFloat("musculatura"),
+                        rs.getFloat("edad"),
+                        rs.getString("color_piel"),
+                        rs.getString("color_ojos")
                     ));
                 }
             } catch (SQLException e) {
                 System.err.println("Fallo al cargar la lista de personajes: " + e.getMessage());
-                return listaPersonajes; 
             }
             return listaPersonajes;
         });
@@ -86,8 +110,7 @@ public class GestorPersonajes {
      * Método interno de baja frecuencia.
      * Actualiza el estado persistente del personaje en el mundo de la base de datos.
      * Está implementado como un proceso "fire-and-forget" que no interrumpe el flujo
-     * del juego, ideal para auto-guardados periódicos (ej: cada 5 minutos) en lugar 
-     * de guardarse en cada tick de movimiento.
+     * del juego, ideal para auto-guardados periódicos.
      */
     public static CompletableFuture<Void> guardarPosicionPersonaje(Personaje personaje) {
         return CompletableFuture.runAsync(() -> {
@@ -104,6 +127,75 @@ public class GestorPersonajes {
 
             } catch (SQLException e) {
                 // Silenciado intencionalmente para evitar sobrecarga de logs en los auto-guards
+            }
+        });
+    }
+    
+    /**
+     * obtenerPersonajePorId
+     * Método genérico asíncrono que busca una entidad específica en la base de datos 
+     * utilizando su identificador único (Primary Key). Transforma la fila SQL
+     * en un objeto Java en memoria (Plantilla Personaje) para ser manipulado por el servidor.
+     */
+    public static CompletableFuture<Personaje> obtenerPersonajePorId(int personajeId) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "SELECT * FROM personajes WHERE id = ?";
+            
+            try (Connection conn = ConexionBBDD.obtenerConexion();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setInt(1, personajeId);
+                
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return new Personaje(
+                            rs.getInt("id"), 
+                            rs.getInt("jugador_id"), 
+                            rs.getString("nombre"),
+                            rs.getInt("nivel"), 
+                            rs.getFloat("pos_x"), 
+                            rs.getFloat("pos_y"), 
+                            rs.getFloat("pos_z"),
+                            rs.getInt("genero"),
+                            rs.getInt("cuerpo"),
+                            rs.getInt("pelo"),
+                            rs.getInt("forma_ojos"),
+                            rs.getFloat("altura"),
+                            rs.getFloat("musculatura"),
+                            rs.getFloat("edad"),
+                            rs.getString("color_piel"),
+                            rs.getString("color_ojos")
+                        );
+                    }
+                }
+            } catch (SQLException e) {
+                System.err.println("Fallo al obtener el personaje: " + e.getMessage());
+            }
+            return null;
+        });
+    }
+
+    /**
+     * eliminarPersonaje
+     * Método asíncrono que borra permanentemente un avatar de la base de datos 
+     * utilizando su identificador único. Valida estrictamente que el personaje 
+     * pertenezca al ID de la cuenta solicitante para garantizar la seguridad.
+     */
+    public static CompletableFuture<Boolean> eliminarPersonaje(int jugadorId, int personajeId) {
+        return CompletableFuture.supplyAsync(() -> {
+            String sql = "DELETE FROM personajes WHERE id = ? AND jugador_id = ?";
+
+            try (Connection conn = ConexionBBDD.obtenerConexion();
+                 PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+                pstmt.setInt(1, personajeId);
+                pstmt.setInt(2, jugadorId);
+                int filasAfectadas = pstmt.executeUpdate();
+                return filasAfectadas > 0;
+
+            } catch (SQLException e) {
+                System.err.println("Fallo al eliminar personaje: " + e.getMessage());
+                return false;
             }
         });
     }

@@ -1,6 +1,6 @@
 [gd_scene format=3 uid="uid://c67uegceghs2o"]
 
-[ext_resource type="Script" uid="uid://qu2dpg5tcbtc" path="res://creacion_de_personaje.gd" id="1_24mr6"]
+[ext_resource type="Script" uid="uid://qu2dpg5tcbtc" path="res://CreacionDePersonaje.gd" id="1_24mr6"]
 
 [node name="CreacionPersonaje" type="Control" unique_id=1518639191]
 custom_minimum_size = Vector2(1920, 1080)

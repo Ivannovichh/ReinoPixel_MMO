@@ -1,0 +1,14 @@
+[gd_scene format=3 uid="uid://dqao8y1qcvuit"]
+
+[ext_resource type="Script" uid="uid://ck3bva5e6snmn" path="res://PersonajeBase.gd" id="1_rgtfe"]
+
+[node name="PersonajeBase" type="Node3D" unique_id=1751257290]
+script = ExtResource("1_rgtfe")
+
+[node name="CuerpoBase" type="MeshInstance3D" parent="." unique_id=845190905]
+
+[node name="Slot_Pelo" type="MeshInstance3D" parent="." unique_id=1246895534]
+
+[node name="Slot_Armadura" type="MeshInstance3D" parent="." unique_id=895246757]
+
+[node name="Slot_Arma" type="MeshInstance3D" parent="." unique_id=1717155034]

@@ -1,90 +1,251 @@
 [gd_scene format=3 uid="uid://cc86lalotsjr7"]
 
-[ext_resource type="Script" uid="uid://ccus3u1sibad8" path="res://seleccion_personaje.gd" id="1_iq6wu"]
+[ext_resource type="Script" uid="uid://ccus3u1sibad8" path="res://SeleccionDePersonaje.gd" id="1_iq6wu"]
+[ext_resource type="Script" uid="uid://dwhhjwpvx6o6f" path="res://omni_light_3d.gd" id="2_bw7nc"]
 
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bw7nc"]
-bg_color = Color(0.23676936, 0.23676936, 0.23676936, 0.8666667)
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_grvfg"]
+bg_color = Color(0.1764706, 0.1764706, 0.1764706, 1)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_ld81p"]
+bg_color = Color(0.12941177, 0.12941177, 0.12941177, 1)
 
 [node name="SeleccionPersonaje" type="Control" unique_id=498839578]
 custom_minimum_size = Vector2(1920, 1080)
 custom_maximum_size = Vector2(1920, 1080)
 layout_mode = 3
-anchors_preset = 0
-offset_right = 40.0
-offset_bottom = 40.0
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1_iq6wu")
 
-[node name="Panel" type="Panel" parent="." unique_id=789230040]
+[node name="MarginContainer" type="MarginContainer" parent="." unique_id=282313884]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_bw7nc")
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
-[node name="PanelCentral" type="VBoxContainer" parent="." unique_id=1091919259]
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -148.0
-offset_top = -31.0
-offset_right = 252.0
-offset_bottom = 89.0
-grow_horizontal = 2
-grow_vertical = 2
-theme_override_constants/separation = 20
-
-[node name="Label" type="Label" parent="PanelCentral" unique_id=210641438]
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer" unique_id=865418439]
 layout_mode = 2
-text = "Seleccion de personaje"
 
-[node name="ListaPersonajes" type="ItemList" parent="PanelCentral" unique_id=1424690151]
-self_modulate = Color(0.75686276, 0.7647059, 0.7647059, 1)
-custom_minimum_size = Vector2(0, 250)
+[node name="BarraSuperior" type="PanelContainer" parent="MarginContainer/VBoxContainer" unique_id=62005297]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_grvfg")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer/BarraSuperior" unique_id=534711274]
+layout_mode = 2
+
+[node name="Control4" type="Control" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=1149758530]
+custom_maximum_size = Vector2(10, -1)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TxtUsuario" type="Label" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=246777610]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Usuario: JotaMynds"
+
+[node name="Control3" type="Control" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=734747200]
+custom_maximum_size = Vector2(10, -1)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=959940578]
+layout_mode = 2
+
+[node name="Control2" type="Control" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=19990411]
+custom_maximum_size = Vector2(10, -1)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TxtNivelCuenta" type="Label" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=1380375636]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Nivel de Cuenta: 1"
+
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=1978650785]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TxtMonedas" type="Label" parent="MarginContainer/VBoxContainer/BarraSuperior/HBoxContainer" unique_id=361287310]
+custom_minimum_size = Vector2(-1, 0)
+layout_mode = 2
+offset_transform_enabled = true
+offset_transform_position = Vector2(-30, 0)
+theme_override_font_sizes/font_size = 18
+text = "🪙 1500 Monedas"
+
+[node name="CuerpoCentral" type="HBoxContainer" parent="MarginContainer/VBoxContainer" unique_id=363253079]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="HBoxBotones" type="HBoxContainer" parent="PanelCentral" unique_id=326274170]
+[node name="PanelIzquierdo" type="PanelContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral" unique_id=639664473]
+custom_maximum_size = Vector2(350, -1)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo" unique_id=1703568587]
+custom_maximum_size = Vector2(500, -1)
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer" unique_id=1669316134]
+layout_mode = 2
+
+[node name="LabelInfo" type="Label" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer" unique_id=400611612]
+layout_mode = 2
+theme_override_font_sizes/font_size = 25
+text = "Tus Personajes"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer" unique_id=1259092004]
+layout_mode = 2
+
+[node name="ListaPersonajes" type="ItemList" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer" unique_id=1702503990]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxBotones" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer" unique_id=1795560526]
+custom_minimum_size = Vector2(120, 35)
+layout_mode = 2
+theme_override_constants/separation = 80
+
+[node name="ButtonSalir" type="Button" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer/HBoxBotones" unique_id=1172851908]
+custom_minimum_size = Vector2(20, 0)
+layout_mode = 2
+text = "Salir del juego"
+
+[node name="ButtonLogout" type="Button" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer/HBoxBotones" unique_id=368495618]
+layout_mode = 2
+text = "Cerrar Sesion"
+
+[node name="PanelCentral" type="PanelContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral" unique_id=251542968]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral" unique_id=36643339]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer" unique_id=1334366042]
+layout_mode = 2
+
+[node name="LabelPersonaje" type="Label" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer" unique_id=1115083515]
+layout_mode = 2
+theme_override_font_sizes/font_size = 25
+text = "Información del Personaje"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer" unique_id=912372858]
+layout_mode = 2
+
+[node name="ListaPersonajes" type="ItemList" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer" unique_id=585434663]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="HBoxBotones" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer" unique_id=326274170]
 custom_minimum_size = Vector2(120, 35)
 layout_mode = 2
 
-[node name="BtnEntrarMundo" type="Button" parent="PanelCentral/HBoxBotones" unique_id=1524784448]
+[node name="BtnDelete" type="Button" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer/HBoxBotones" unique_id=900308824]
+layout_mode = 2
+text = "Eliminar Personaje"
+
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer/HBoxBotones" unique_id=11819194]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnCrearNuevo" type="Button" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer/HBoxBotones" unique_id=1654057809]
+layout_mode = 2
+text = "Crear Nuevo Personaje"
+
+[node name="PanelDerecho" type="PanelContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral" unique_id=992080755]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho" unique_id=1665876360]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer" unique_id=1332189933]
+layout_mode = 2
+
+[node name="LabelPersonaje" type="Label" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer" unique_id=1488801944]
+layout_mode = 2
+theme_override_font_sizes/font_size = 25
+text = "Vista Previa del Personaje"
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer" unique_id=70413401]
+layout_mode = 2
+
+[node name="Panel" type="Panel" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer" unique_id=529415823]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_styles/panel = SubResource("StyleBoxFlat_ld81p")
+
+[node name="ContenedorEspejo3D" type="SubViewportContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel" unique_id=270482283]
+custom_maximum_size = Vector2(850, 880)
+layout_mode = 0
+offset_top = 4.0
+offset_right = 721.0
+offset_bottom = 850.0
+size_flags_horizontal = 3
+size_flags_vertical = 3
+stretch = true
+
+[node name="SubViewport" type="SubViewport" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel/ContenedorEspejo3D" unique_id=2090078780]
+transparent_bg = true
+handle_input_locally = false
+oversampling = false
+size = Vector2i(721, 846)
+render_target_update_mode = 4
+
+[node name="Camera3D" type="Camera3D" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel/ContenedorEspejo3D/SubViewport" unique_id=12364491]
+transform = Transform3D(1, 0, 0, 0, 0.9951785, -0.09807996, 0, 0.09807996, 0.9951785, 0, 1.095937, 2.8278122)
+fov = 94.3
+
+[node name="OmniLight3D" type="OmniLight3D" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel/ContenedorEspejo3D/SubViewport" unique_id=338851643]
+transform = Transform3D(0.99832, -0.057942286, 0, 0.057942286, 0.99832, 0, 0, 0, 1, -0.8318011, 0.14296418, 1.3876426)
+light_color = Color(0.9411765, 0.49803922, 0.1254902, 1)
+shadow_enabled = true
+script = ExtResource("2_bw7nc")
+
+[node name="PivoteModelo" type="Node3D" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel/ContenedorEspejo3D/SubViewport" unique_id=271309967]
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/Panel/ContenedorEspejo3D/SubViewport" unique_id=1551898932]
+transform = Transform3D(0.99656045, -0.0049054027, -0.08272513, 0.028284103, -0.918171, 0.39517376, -0.0778943, -0.39615425, -0.9148741, 0.28456044, 2.6951895, -6.3242683)
+
+[node name="HBoxBotones" type="HBoxContainer" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer" unique_id=1089465274]
+custom_minimum_size = Vector2(120, 35)
+layout_mode = 2
+
+[node name="Control" type="Control" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/HBoxBotones" unique_id=1747071536]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="BtnEntrarMundo" type="Button" parent="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/HBoxBotones" unique_id=1524784448]
 layout_mode = 2
 text = "Entrar al Reino
 "
 
-[node name="BtnCrearNuevo" type="Button" parent="PanelCentral/HBoxBotones" unique_id=1654057809]
-layout_mode = 2
-text = "Crear Nuevo Personaje"
-
-[node name="ButtonLogout" type="Button" parent="." unique_id=368495618]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 31.0
-offset_top = -52.0
-offset_right = 192.0
-offset_bottom = -21.0
-grow_vertical = 0
-text = "Cerrar Sesion"
-
-[node name="ButtonSalir" type="Button" parent="." unique_id=1172851908]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 217.0
-offset_top = -52.0
-offset_right = 341.0
-offset_bottom = -21.0
-grow_vertical = 0
-text = "Salir"
-
-[connection signal="item_selected" from="PanelCentral/ListaPersonajes" to="." method="_on_lista_personajes_item_selected"]
-[connection signal="pressed" from="PanelCentral/HBoxBotones/BtnEntrarMundo" to="." method="_on_btn_entrar_mundo_pressed"]
-[connection signal="pressed" from="PanelCentral/HBoxBotones/BtnCrearNuevo" to="." method="_on_btn_crear_nuevo_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer/HBoxBotones/ButtonSalir" to="." method="_on_button_salir_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/CuerpoCentral/PanelIzquierdo/MarginContainer/VBoxContainer/HBoxBotones/ButtonLogout" to="." method="_on_button_logout_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/CuerpoCentral/PanelCentral/MarginContainer/VBoxContainer/HBoxBotones/BtnCrearNuevo" to="." method="_on_btn_crear_nuevo_pressed"]
+[connection signal="pressed" from="MarginContainer/VBoxContainer/CuerpoCentral/PanelDerecho/MarginContainer/VBoxContainer/HBoxBotones/BtnEntrarMundo" to="." method="_on_btn_entrar_mundo_pressed"]

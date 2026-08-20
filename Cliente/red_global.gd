@@ -13,6 +13,7 @@ signal evento_login(exito: bool)
 signal evento_registro(exito: bool)
 signal evento_personajes_recibidos(lista: Array)
 signal evento_creacion_personaje(exito: bool)
+signal evento_eliminacion_personaje(exito: bool)
 
 # Opcodes de salida (Godot -> Java)
 const C_LOGIN : int = 1
@@ -21,6 +22,7 @@ const C_PEDIR_PERSONAJES : int = 3
 const C_CREAR_PERSONAJE : int = 4
 const C_SELECCIONAR_PERSONAJE : int = 5
 const C_MOVER_PERSONAJE : int = 6
+const C_ELIMINAR_PERSONAJE : int = 7
 
 # Opcodes de entrada (Java -> Godot)
 const S_LOGIN_OK : int = 10
@@ -30,6 +32,7 @@ const S_REGISTRO_ERROR : int = 13
 const S_LISTA_PERSONAJES : int = 14
 const S_CREAR_PERSONAJE_RES : int = 15
 const S_ACTUALIZAR_POSICION : int = 16
+const S_ELIMINAR_PERSONAJE_RES : int = 17
 
 # Cliente KCP (GDExtension nativa compilada en C++)
 var kcp_client = null
@@ -116,10 +119,11 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 		S_CREAR_PERSONAJE_RES:
 			var exito = buffer.get_8() == 1 
 			evento_creacion_personaje.emit(exito)
+		S_ELIMINAR_PERSONAJE_RES:
+			var exito = buffer.get_8() == 1
+			evento_eliminacion_personaje.emit(exito)
 		S_LISTA_PERSONAJES:
-			print("¡Paquete S_LISTA_PERSONAJES recibido por KCP!")
 			var cantidad = buffer.get_32() 
-			print("Cantidad de personajes declarada: ", cantidad)
 			var lista = []
 			
 			for i in range(cantidad):
@@ -131,15 +135,23 @@ func _procesar_paquete_entrante(paquete_bytes: PackedByteArray):
 				var p_y = buffer.get_float()
 				var p_z = buffer.get_float()
 				
-				print("Cargando personaje: ", p_nombre)
+				# Leemos los 9 atributos estéticos en el mismo orden
+				var p_genero = buffer.get_32()
+				var p_cuerpo = buffer.get_32()
+				var p_pelo = buffer.get_32()
+				var p_forma_ojos = buffer.get_32()
+				var p_altura = buffer.get_float()
+				var p_musculatura = buffer.get_float()
+				var p_edad = buffer.get_float()
+				var p_color_piel = _leer_string_de_buffer(buffer)
+				var p_color_ojos = _leer_string_de_buffer(buffer)
+				
 				lista.append({
-					"id": p_id,
-					"jugador_id": p_jugador_id,
-					"nombre": p_nombre,
-					"nivel": p_nivel,
-					"pos_x": p_x,
-					"pos_y": p_y,
-					"pos_z": p_z
+					"id": p_id, "jugador_id": p_jugador_id, "nombre": p_nombre, "nivel": p_nivel,
+					"pos_x": p_x, "pos_y": p_y, "pos_z": p_z,
+					"genero": p_genero, "cuerpo": p_cuerpo, "pelo": p_pelo, "forma_ojos": p_forma_ojos,
+					"altura": p_altura, "musculatura": p_musculatura, "edad": p_edad,
+					"color_piel": p_color_piel, "color_ojos": p_color_ojos
 				})
 				
 			evento_personajes_recibidos.emit(lista)

@@ -6,25 +6,42 @@ import red.PaqueteSalida;
 /**
  * Entidad Personaje.
  * Representa el estado en memoria RAM de un avatar dentro del mundo del juego.
- * Actúa como la fuente de verdad espacial y de estadísticas básicas en el servidor,
- * procesando actualizaciones sin necesidad de consultar la base de datos continuamente.
+ * Actúa como la fuente de verdad espacial, de estadísticas y ahora de configuración 
+ * estética en el servidor, procesando actualizaciones sin consultar la BBDD continuamente.
  */
 public class Personaje {
 
+    // --- Atributos Fundamentales ---
     private int id;
     private int jugadorId;
     private String nombre;
     private int nivel;
+    
+    // --- Coordenadas Espaciales ---
     private float posX;
     private float posY;
     private float posZ;
+    
+    // --- Atributos Estéticos y Cosméticos ---
+    private int genero;
+    private int cuerpo;
+    private int pelo;
+    private int formaOjos;
+    private float altura;
+    private float musculatura;
+    private float edad;
+    private String colorPiel;
+    private String colorOjos;
 
     /**
      * Constructor principal de la entidad.
-     * Instancia los datos fundamentales del personaje tras ser recuperados
-     * de la base de datos durante el proceso de selección de avatar.
+     * Instancia los datos fundamentales del personaje junto con todos sus
+     * modificadores cosméticos tras ser recuperados de la base de datos.
      */
-    public Personaje(int id, int jugadorId, String nombre, int nivel, float posX, float posY, float posZ) {
+    public Personaje(int id, int jugadorId, String nombre, int nivel, float posX, float posY, float posZ,
+                     int genero, int cuerpo, int pelo, int formaOjos, float altura, float musculatura, 
+                     float edad, String colorPiel, String colorOjos) {
+                         
         this.id = id;
         this.jugadorId = jugadorId;
         this.nombre = nombre;
@@ -32,6 +49,17 @@ public class Personaje {
         this.posX = posX;
         this.posY = posY;
         this.posZ = posZ;
+        
+        // Inicialización de la estética
+        this.genero = genero;
+        this.cuerpo = cuerpo;
+        this.pelo = pelo;
+        this.formaOjos = formaOjos;
+        this.altura = altura;
+        this.musculatura = musculatura;
+        this.edad = edad;
+        this.colorPiel = colorPiel;
+        this.colorOjos = colorOjos;
     }
 
     /**
@@ -78,4 +106,15 @@ public class Personaje {
     public float getPosX() { return posX; }
     public float getPosY() { return posY; }
     public float getPosZ() { return posZ; }
+    
+    // Getters Estéticos
+    public int getGenero() { return genero; }
+    public int getCuerpo() { return cuerpo; }
+    public int getPelo() { return pelo; }
+    public int getFormaOjos() { return formaOjos; }
+    public float getAltura() { return altura; }
+    public float getMusculatura() { return musculatura; }
+    public float getEdad() { return edad; }
+    public String getColorPiel() { return colorPiel; }
+    public String getColorOjos() { return colorOjos; }
 }

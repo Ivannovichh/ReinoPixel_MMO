@@ -45,13 +45,15 @@ public class GestorAutenticacion {
 
     /**
      * autenticarJugador
-     * Método genérico asíncrono que recupera el hash cifrado de la cuenta solicitada
-     * y ejecuta una comparación matemática de seguridad en segundo plano para aprobar 
-     * o denegar el acceso a la red.
+     * Método genérico asíncrono que recupera el ID y el hash cifrado de la cuenta solicitada.
+     * Ejecuta una comparación matemática de seguridad en segundo plano para aprobar 
+     * o denegar el acceso. Devuelve el ID real de la base de datos si es exitoso, 
+     * o -1 si las credenciales son incorrectas o no existe el usuario.
      */
-    public static CompletableFuture<Boolean> autenticarJugador(String correo, String passwordTextoPlano) {
+    public static CompletableFuture<Integer> autenticarJugador(String correo, String passwordTextoPlano) {
         return CompletableFuture.supplyAsync(() -> {
-            String sql = "SELECT password FROM jugadores WHERE correo = ?";
+            // Modificamos la consulta para extraer también el ID numérico único del jugador
+            String sql = "SELECT id, password FROM jugadores WHERE correo = ?";
             
             try (Connection conn = ConexionBBDD.obtenerConexion();
                  PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -61,14 +63,20 @@ public class GestorAutenticacion {
                 try (ResultSet rs = pstmt.executeQuery()) {
                     if (rs.next()) {
                         String hashAlmacenado = rs.getString("password");
-                        return BCrypt.checkpw(passwordTextoPlano, hashAlmacenado);
+                        
+                        // Si la contraseña coincide matemáticamente, devolvemos el ID real de la BBDD
+                        if (BCrypt.checkpw(passwordTextoPlano, hashAlmacenado)) {
+                            return rs.getInt("id");
+                        }
                     }
                 }
             } catch (SQLException e) {
                 System.err.println("Fallo al autenticar jugador: " + e.getMessage());
-                return false;
+                return -1;
             }
-            return false;
+            
+            // Si la cuenta no existe o la contraseña es incorrecta, devolvemos -1 por seguridad
+            return -1;
         });
     }
 }
